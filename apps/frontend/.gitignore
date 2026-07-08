@@ -1,0 +1,10 @@
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Build do Vite
+dist/
+
+# Cache de desenvolvimento
+.vite/

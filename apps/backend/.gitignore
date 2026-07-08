@@ -1,0 +1,10 @@
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Uploads de imagens
+uploads/
+
+# Build do NestJS
+dist/
