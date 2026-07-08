@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
 import { PixelButton } from '../ui/PixelButton';
 import { PixelInput } from '../ui/PixelInput';
-import { RichTextEditor } from './RichTextEditor';
+import { RichTextEditor, type RichTextEditorHandle } from './RichTextEditor';
 import type { MainStory, SideQuest, SideQuestStatus, StoryType } from '../../types/history';
 import type { Character } from '../../types/character';
 
@@ -35,6 +35,7 @@ export function StoryEditor({ type, story, nextOrdem = 1, characters, isSaving =
     isSideQuest && story ? (story as SideQuest).status : 'INATIVA',
   );
   const [error, setError] = useState<string | null>(null);
+  const editorRef = useRef<RichTextEditorHandle>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,15 +45,17 @@ export function StoryEditor({ type, story, nextOrdem = 1, characters, isSaving =
       return;
     }
 
-    if (!stripContent(conteudo)) {
+    const htmlContent = editorRef.current?.getHTML() ?? conteudo;
+
+    if (!stripContent(htmlContent)) {
       setError('Escreva o conteúdo da história.');
       return;
     }
 
     if (isSideQuest) {
-      onSave({ titulo: titulo.trim(), conteudo, status });
+      onSave({ titulo: titulo.trim(), conteudo: htmlContent, status });
     } else {
-      onSave({ titulo: titulo.trim(), conteudo, ordem });
+      onSave({ titulo: titulo.trim(), conteudo: htmlContent, ordem });
     }
   };
 
@@ -132,6 +135,8 @@ export function StoryEditor({ type, story, nextOrdem = 1, characters, isSaving =
         <div className="flex flex-col gap-2">
           <label className="pixel-label">Conteúdo</label>
           <RichTextEditor
+            key={story?.id ?? `new-${type}`}
+            ref={editorRef}
             content={conteudo}
             onChange={setConteudo}
             characters={characters}

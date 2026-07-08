@@ -43,6 +43,10 @@ export default {
       animation: {
         blink: 'blink 1.2s step-end infinite',
         float: 'float 3s ease-in-out infinite',
+        heartbeat: 'heartbeat 1.4s ease-in-out infinite',
+        'coin-spin': 'coin-spin 2.5s ease-in-out infinite',
+        sparkle: 'sparkle 1.8s ease-in-out infinite',
+        'hp-shimmer': 'hp-shimmer 2s linear infinite',
       },
       keyframes: {
         blink: {
@@ -52,6 +56,29 @@ export default {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-4px)' },
+        },
+        heartbeat: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '14%': { transform: 'scale(1.18)' },
+          '28%': { transform: 'scale(1)' },
+          '42%': { transform: 'scale(1.12)' },
+          '70%': { transform: 'scale(1)' },
+        },
+        'coin-spin': {
+          '0%, 100%': { transform: 'translateY(0) rotateY(0deg)' },
+          '25%': { transform: 'translateY(-3px) rotateY(180deg)' },
+          '50%': { transform: 'translateY(0) rotateY(360deg)' },
+          '75%': { transform: 'translateY(-2px) rotateY(540deg)' },
+        },
+        sparkle: {
+          '0%, 100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+          '25%': { transform: 'scale(1.2) rotate(-8deg)', opacity: '0.85' },
+          '50%': { transform: 'scale(0.95) rotate(8deg)', opacity: '1' },
+          '75%': { transform: 'scale(1.15) rotate(-4deg)', opacity: '0.9' },
+        },
+        'hp-shimmer': {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
         },
       },
     },

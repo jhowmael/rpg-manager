@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import type { Editor } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import {
@@ -19,6 +19,10 @@ import { AUDIO_DRAG_TYPE, type AudioDragPayload } from '../../data/soundLibrary'
 import { CHARACTER_DRAG_TYPE, type CharacterDragPayload } from '../../data/mockCharacters';
 import { readImageAsDataUrl, validateImageFile } from '../../utils/imageUpload';
 import type { Character } from '../../types/character';
+
+export interface RichTextEditorHandle {
+  getHTML: () => string;
+}
 
 interface RichTextEditorProps {
   content: string;
@@ -99,14 +103,19 @@ function insertCharacterTrigger(editor: Editor, payload: CharacterDragPayload, p
   }
 }
 
-export function RichTextEditor({
+export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor({
   content,
   onChange,
   placeholder = 'Escreva a história aqui…',
   characters = [],
-}: RichTextEditorProps) {
+}, ref) {
   const editorRef = useRef<Editor | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const syncContent = useCallback(() => {
+    const ed = editorRef.current;
+    if (ed) onChange(ed.getHTML());
+  }, [onChange]);
 
   const handleImageFile = useCallback(async (file: File, pos?: number) => {
     const ed = editorRef.current;
@@ -125,6 +134,10 @@ export function RichTextEditor({
       window.alert('Não foi possível carregar a imagem.');
     }
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    getHTML: () => editorRef.current?.getHTML() ?? content,
+  }), [content]);
 
   const editor = useEditor({
     extensions: getStoryExtensions({ placeholder }),
@@ -217,13 +230,27 @@ export function RichTextEditor({
     },
   });
 
+  useEffect(() => {
+    const ed = editorRef.current;
+    if (!ed || ed.isDestroyed) return;
+    if (content !== ed.getHTML()) {
+      ed.commands.setContent(content, { emitUpdate: false });
+    }
+  }, [content]);
+
   const handleInsertAudio = useCallback((payload: AudioDragPayload) => {
-    if (editorRef.current) insertAudioTrigger(editorRef.current, payload);
-  }, []);
+    if (editorRef.current) {
+      insertAudioTrigger(editorRef.current, payload);
+      syncContent();
+    }
+  }, [syncContent]);
 
   const handleInsertCharacter = useCallback((payload: CharacterDragPayload) => {
-    if (editorRef.current) insertCharacterTrigger(editorRef.current, payload);
-  }, []);
+    if (editorRef.current) {
+      insertCharacterTrigger(editorRef.current, payload);
+      syncContent();
+    }
+  }, [syncContent]);
 
   const handleImageInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,4 +356,4 @@ export function RichTextEditor({
       />
     </div>
   );
-}
+});

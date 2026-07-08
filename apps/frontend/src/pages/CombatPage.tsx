@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CombatBattle } from '../components/combat/CombatBattle';
 import { CombatHistory } from '../components/combat/CombatHistory';
 import { CombatInitiative } from '../components/combat/CombatInitiative';
 import { CombatList } from '../components/combat/CombatList';
 import { CombatSetup } from '../components/combat/CombatSetup';
+import { ApiError } from '../services/api';
+import { createCombat, deleteCombat, updateCombat } from '../services/combatService';
 import type { Character } from '../types/character';
 import type { Hero } from '../types/hero';
 import type { Combat, CombatFighter, NewFighterData } from '../types/combat';
 import { updateFighter } from '../utils/combat';
-import { generateId } from '../utils/text';
 
 type View = 'list' | 'setup' | 'initiative' | 'battle' | 'history';
 
@@ -23,9 +24,9 @@ interface CombatPageProps {
 
 function createEmptyCombat(campaignId: string): Combat {
   return {
-    id: generateId('combat'),
+    id: crypto.randomUUID(),
     campanha_id: campaignId,
-    nome: '',
+    nome: 'Novo combate',
     tempo_turno_minutos: 3,
     fase: 'setup',
     rodada_atual: 1,
@@ -38,7 +39,7 @@ function createEmptyCombat(campaignId: string): Combat {
 
 function createFighter(data: NewFighterData): CombatFighter {
   return {
-    id: generateId('fighter'),
+    id: crypto.randomUUID(),
     nome: data.nome,
     source: data.source,
     sourceId: data.sourceId,
@@ -65,6 +66,8 @@ export function CombatPage({
   const [view, setView] = useState<View>('list');
   const [activeCombatId, setActiveCombatId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const campaignCombats = combats.filter(c => c.campanha_id === campaignId);
   const campaignCharacters = characters.filter(c => c.campanha_id === campaignId);
@@ -78,10 +81,52 @@ export function CombatPage({
     setTimeout(() => setToast(null), 3000);
   };
 
-  const updateCombat = (id: string, patch: Partial<Combat> | Combat) => {
-    onCombatsChange(
-      combats.map(c => (c.id === id ? { ...c, ...patch } : c)),
-    );
+  const replaceCombat = useCallback((updated: Combat) => {
+    onCombatsChange(combats.map(c => (c.id === updated.id ? updated : c)));
+  }, [combats, onCombatsChange]);
+
+  const persistCombat = useCallback(async (combat: Combat, immediate = false) => {
+    const run = async () => {
+      try {
+        setIsSaving(true);
+        const saved = await updateCombat(combat.id, combat);
+        replaceCombat(saved);
+      } catch (error) {
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : 'Não foi possível salvar o combate.';
+        showToast(`⚠️ ${message}`);
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+    if (immediate) {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      await run();
+      return;
+    }
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      void run();
+    }, 500);
+  }, [replaceCombat]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  const updateCombatState = (id: string, patch: Partial<Combat> | Combat, immediate = false) => {
+    const current = combats.find(c => c.id === id);
+    if (!current) return;
+
+    const next = { ...current, ...patch };
+    onCombatsChange(combats.map(c => (c.id === id ? next : c)));
+    void persistCombat(next, immediate);
   };
 
   const goToList = () => {
@@ -97,19 +142,41 @@ export function CombatPage({
     else setView('battle');
   };
 
-  const handleCreate = () => {
-    const combat = createEmptyCombat(campaignId);
-    onCombatsChange([combat, ...combats]);
-    setActiveCombatId(combat.id);
-    setView('setup');
-    showToast('⚔️ Novo combate criado!');
+  const handleCreate = async () => {
+    const draft = createEmptyCombat(campaignId);
+
+    try {
+      setIsSaving(true);
+      const created = await createCombat(draft);
+      onCombatsChange([created, ...combats]);
+      setActiveCombatId(created.id);
+      setView('setup');
+      showToast('⚔️ Novo combate criado!');
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : 'Não foi possível criar o combate.';
+      showToast(`⚠️ ${message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Excluir este combate?')) {
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Excluir este combate?')) return;
+
+    try {
+      await deleteCombat(id);
       onCombatsChange(combats.filter(c => c.id !== id));
       if (activeCombatId === id) goToList();
       showToast('Combate removido.');
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : 'Não foi possível excluir o combate.';
+      showToast(`⚠️ ${message}`);
     }
   };
 
@@ -121,11 +188,12 @@ export function CombatPage({
         </p>
         <CombatList
           combats={campaignCombats}
-          onCreate={handleCreate}
+          onCreate={() => void handleCreate()}
           onOpen={openCombat}
-          onDelete={handleDelete}
+          onDelete={id => void handleDelete(id)}
         />
         {toast && <Toast message={toast} />}
+        {isSaving && <SavingIndicator />}
       </>
     );
   }
@@ -133,6 +201,7 @@ export function CombatPage({
   const banner = (
     <p className="mb-4 text-center font-sans text-sm text-rpg-ink-faded">
       Campanha: <span className="font-semibold text-rpg-ink-dark">{campaignName}</span>
+      {isSaving && <span className="ml-2 text-rpg-gold-dark">· salvando…</span>}
     </p>
   );
 
@@ -144,19 +213,19 @@ export function CombatPage({
           combat={activeCombat}
           heroes={campaignHeroes}
           characters={campaignCharacters}
-          onUpdate={patch => updateCombat(activeCombat.id, patch)}
+          onUpdate={patch => updateCombatState(activeCombat.id, patch)}
           onAddFighter={data => {
-            updateCombat(activeCombat.id, {
+            updateCombatState(activeCombat.id, {
               fighters: [...activeCombat.fighters, createFighter(data)],
             });
           }}
           onRemoveFighter={fighterId => {
-            updateCombat(activeCombat.id, {
+            updateCombatState(activeCombat.id, {
               fighters: activeCombat.fighters.filter(f => f.id !== fighterId),
             });
           }}
           onNext={() => {
-            updateCombat(activeCombat.id, { fase: 'initiative' });
+            updateCombatState(activeCombat.id, { fase: 'initiative' }, true);
             setView('initiative');
           }}
           onBack={goToList}
@@ -173,21 +242,24 @@ export function CombatPage({
         <CombatInitiative
           combat={activeCombat}
           onUpdateFighter={(fighterId, patch) => {
-            updateCombat(activeCombat.id, updateFighter(activeCombat, fighterId, patch));
+            updateCombatState(
+              activeCombat.id,
+              updateFighter(activeCombat, fighterId, patch),
+            );
           }}
           onStartBattle={sortedFighters => {
-            updateCombat(activeCombat.id, {
+            updateCombatState(activeCombat.id, {
               fase: 'battle',
               fighters: sortedFighters,
               rodada_atual: 1,
               turno_atual_index: 0,
               turno_iniciado_em: Date.now(),
-            });
+            }, true);
             setView('battle');
             showToast('⚔️ Batalha iniciada!');
           }}
           onBack={() => {
-            updateCombat(activeCombat.id, { fase: 'setup' });
+            updateCombatState(activeCombat.id, { fase: 'setup' }, true);
             setView('setup');
           }}
         />
@@ -211,15 +283,15 @@ export function CombatPage({
       {banner}
       <CombatBattle
         combat={activeCombat}
-        onUpdate={combat => updateCombat(activeCombat.id, combat)}
+        onUpdate={combat => updateCombatState(activeCombat.id, combat)}
         onBack={goToList}
         onEnd={() => {
           if (window.confirm('Encerrar este combate?')) {
-            updateCombat(activeCombat.id, {
+            updateCombatState(activeCombat.id, {
               fase: 'finished',
               turno_iniciado_em: null,
               encerrado_em: new Date().toISOString(),
-            });
+            }, true);
             showToast('Combate encerrado.');
             setView('history');
           }
@@ -235,6 +307,14 @@ function Toast({ message }: { message: string }) {
   return (
     <div className="fixed bottom-6 left-6 z-50 border-2 border-rpg-border-dark bg-rpg-panel px-5 py-3 font-sans text-base text-rpg-ink-dark shadow-pixel-dark">
       {message}
+    </div>
+  );
+}
+
+function SavingIndicator() {
+  return (
+    <div className="fixed bottom-6 right-6 z-50 border-2 border-rpg-border-dark bg-rpg-panel px-4 py-2 font-sans text-sm text-rpg-ink-dim shadow-pixel-dark">
+      Salvando…
     </div>
   );
 }

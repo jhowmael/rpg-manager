@@ -13,6 +13,7 @@ import {
   updateCampaign,
 } from './services/campaignService';
 import { fetchBestiary } from './services/bestiaryService';
+import { fetchCombats } from './services/combatService';
 import { fetchHeroes } from './services/heroService';
 import type { Campaign, CreateCampaignInput, UpdateCampaignInput } from './types/campaign';
 import type { Character } from './types/character';
@@ -53,15 +54,18 @@ export default function App() {
 
   const loadCampaignData = useCallback(async (campaignId: string) => {
     try {
-      const [bestiary, campaignHeroes] = await Promise.all([
+      const [bestiary, campaignHeroes, campaignCombats] = await Promise.all([
         fetchBestiary(campaignId),
         fetchHeroes(campaignId),
+        fetchCombats(campaignId),
       ]);
       setCharacters(bestiary);
       setHeroes(campaignHeroes);
+      setCombats(campaignCombats);
     } catch {
       setCharacters([]);
       setHeroes([]);
+      setCombats([]);
     }
   }, []);
 
@@ -75,6 +79,7 @@ export default function App() {
     } else {
       setCharacters([]);
       setHeroes([]);
+      setCombats([]);
     }
   }, [selectedCampaign, loadCampaignData]);
 

@@ -13,6 +13,7 @@ model Campaign {
   descricao   String?
   sistema_rpg String?
   criado_em   DateTime            @default(now())
+  excluido_em DateTime?
   players     Player[]
   mainStories MainStory[]
   sideQuests  SideQuest[]
@@ -103,8 +104,12 @@ model Combat {
   campaign            Campaign            @relation(fields: [campanha_id], references: [id], onDelete: Cascade)
   nome_encontro       String
   em_andamento        Boolean             @default(false)
+  fase                String              @default("setup")
   tempo_turno_minutos Int                 @default(5)
   rodada_atual        Int                 @default(1)
+  turno_atual_index   Int                 @default(0)
+  turno_iniciado_em   DateTime?
+  encerrado_em        DateTime?
   criado_em           DateTime            @default(now())
   participants        CombatParticipant[]
 
@@ -119,12 +124,14 @@ model CombatParticipant {
   player            Player?              @relation(fields: [jogador_id], references: [id], onDelete: SetNull)
   personagem_id     String?
   character         Character?           @relation(fields: [personagem_id], references: [id], onDelete: SetNull)
-  nome_combate      String // Copia o nome do jogador/NPC ou texto livre
-  tipo_participante String // 'JOGADOR', 'NPC', 'MOB'
+  nome_combate      String
+  tipo_participante String // 'JOGADOR', 'NPC', 'MOB', 'CUSTOM'
+  vida_maxima       Int                  @default(20)
   vida_atual        Int
   ca_atual          Int
-  iniciativa        Int                  @default(0)
+  iniciativa        Int?
   ordem_vez         Int                  @default(0)
+  status            String               @default("active")
   ativo             Boolean              @default(true)
   statusEffects     CombatStatusEffect[]
 

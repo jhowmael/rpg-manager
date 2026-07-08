@@ -36,10 +36,27 @@ export function AppLayout({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-4 font-sans text-sm">
-            <span className="hidden text-rpg-hp sm:inline">HP ████████░░</span>
-            <span className="text-rpg-gold-dark">🪙 ---</span>
-            <span className="text-rpg-mana">✨ ---</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 border-2 border-rpg-border bg-rpg-parchment px-2.5 py-1.5 shadow-pixel">
+              <span className="inline-block text-base leading-none animate-heartbeat" aria-hidden>
+                ❤️
+              </span>
+              <span className="font-bold tabular-nums text-rpg-hp">---</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 border-2 border-rpg-border bg-rpg-parchment px-2.5 py-1.5 shadow-pixel [perspective:120px]">
+              <span className="inline-block text-base leading-none animate-coin-spin [transform-style:preserve-3d]" aria-hidden>
+                🪙
+              </span>
+              <span className="font-bold tabular-nums text-rpg-gold-dark">---</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 border-2 border-rpg-border bg-rpg-parchment px-2.5 py-1.5 shadow-pixel">
+              <span className="inline-block text-base leading-none animate-sparkle" aria-hidden>
+                ✨
+              </span>
+              <span className="font-bold tabular-nums text-rpg-mana">---</span>
+            </div>
           </div>
         </header>
 

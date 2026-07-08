@@ -9,8 +9,6 @@ import {
   getFighterStatus,
   isFighterInBattle,
 } from '../../utils/combat';
-import { generateId } from '../../utils/text';
-
 interface FighterBattleCardProps {
   fighter: CombatFighter;
   isActive: boolean;
@@ -232,7 +230,7 @@ function StatusEffectEditor({
     if (!nome.trim()) return;
     onChange([
       ...effects,
-      { id: generateId('fx'), nome: nome.trim(), tipo },
+      { id: crypto.randomUUID(), nome: nome.trim(), tipo },
     ]);
     setNome('');
   };

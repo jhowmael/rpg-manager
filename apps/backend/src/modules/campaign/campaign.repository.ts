@@ -15,6 +15,7 @@ export class CampaignRepository {
 
   async findAll(): Promise<Campaign[]> {
     return this.prisma.campaign.findMany({
+      where: { excluido_em: null },
       orderBy: {
         criado_em: 'desc',
       },
@@ -22,8 +23,8 @@ export class CampaignRepository {
   }
 
   async findById(id: string): Promise<Campaign | null> {
-    return this.prisma.campaign.findUnique({
-      where: { id },
+    return this.prisma.campaign.findFirst({
+      where: { id, excluido_em: null },
     });
   }
 
@@ -35,8 +36,9 @@ export class CampaignRepository {
   }
 
   async delete(id: string): Promise<Campaign> {
-    return this.prisma.campaign.delete({
+    return this.prisma.campaign.update({
       where: { id },
+      data: { excluido_em: new Date() },
     });
   }
 }

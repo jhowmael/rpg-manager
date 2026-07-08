@@ -36,6 +36,7 @@ async function bootstrap() {
     .addTag('history/side-quest', 'Side quests')
     .addTag('bestiary', 'Grimório — NPCs e Mobs')
     .addTag('hero', 'Heróis')
+    .addTag('combat', 'Arena — combates')
     .addTag('image', 'Upload de imagens')
     .build();
 
