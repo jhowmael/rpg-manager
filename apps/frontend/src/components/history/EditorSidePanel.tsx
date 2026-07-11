@@ -1,7 +1,7 @@
 import { GripVertical, Users } from 'lucide-react';
 import { CharacterPalette } from './CharacterPalette';
 import { AudioPalette } from './AudioPalette';
-import type { CharacterDragPayload } from '../../data/mockCharacters';
+import type { CharacterDragPayload } from '../../data/characterDrag';
 import type { AudioDragPayload } from '../../data/soundLibrary';
 import type { Character } from '../../types/character';
 

@@ -31,7 +31,7 @@ export class HeroService {
     const current = await this.findById(id);
     const updated = await this.repository.update(id, data);
 
-    if (data.imagem_id && current.imagem_id && data.imagem_id !== current.imagem_id) {
+    if (current.imagem_id && current.imagem_id !== updated.imagem_id) {
       await this.imageService.delete(current.imagem_id);
     }
 
@@ -40,7 +40,9 @@ export class HeroService {
 
   async delete(id: string): Promise<HeroResponseDto> {
     const hero = await this.findById(id);
-    await this.imageService.delete(hero.imagem_id);
-    return this.repository.delete(id);
+    const imagemId = hero.imagem_id;
+    await this.repository.delete(id);
+    await this.imageService.delete(imagemId);
+    return hero;
   }
 }

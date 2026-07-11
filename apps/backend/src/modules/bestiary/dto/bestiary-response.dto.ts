@@ -11,6 +11,15 @@ export class BestiaryResponseDto {
   @ApiProperty()
   nome: string;
 
+  @ApiPropertyOptional()
+  titulo?: string;
+
+  @ApiPropertyOptional()
+  raca?: string;
+
+  @ApiPropertyOptional()
+  classe?: string;
+
   @ApiProperty({ enum: BestiaryType })
   tipo: string;
 
@@ -21,10 +30,13 @@ export class BestiaryResponseDto {
   historia?: string;
 
   @ApiPropertyOptional()
-  o_que_sabe?: string;
+  caracteristicas?: string;
 
   @ApiPropertyOptional()
-  personalidade?: string;
+  o_que_sabe?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  personalidade?: string[];
 
   @ApiPropertyOptional()
   familia_relacoes?: string;

@@ -1,8 +1,10 @@
 import { ArrowLeft } from 'lucide-react';
 import { PixelButton } from '../ui/PixelButton';
 import { EntityImage } from '../ui/EntityImage';
+import { CharacterProfileDetails } from '../bestiary/CharacterProfileDetails';
 import type { Character } from '../../types/character';
 import { getCharacterEmoji } from '../../types/character';
+import { getCharacterMetaItems } from '../../utils/characterProfile';
 
 interface CharacterDetailPageProps {
   character: Character;
@@ -12,6 +14,7 @@ interface CharacterDetailPageProps {
 export function CharacterDetailPage({ character, onBack }: CharacterDetailPageProps) {
   const emoji = getCharacterEmoji(character.tipo);
   const isMob = character.tipo === 'MOB';
+  const meta = getCharacterMetaItems(character);
 
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-rpg-void/95 backdrop-blur-sm">
@@ -41,26 +44,36 @@ export function CharacterDetailPage({ character, onBack }: CharacterDetailPagePr
                 {isMob ? '💀 MOB / CRIATURA' : '👤 NPC'}
               </p>
               <h1 className="pixel-title">{character.nome}</h1>
-              <span
-                className={[
-                  'mt-3 inline-block w-fit border px-3 py-1 font-sans text-xs font-bold uppercase',
-                  isMob
-                    ? 'border-rpg-hp bg-rpg-hp/10 text-rpg-hp'
-                    : 'border-rpg-forest bg-rpg-forest/10 text-rpg-forest',
-                ].join(' ')}
-              >
-                {character.tipo}
-              </span>
+              {character.titulo && (
+                <p className="mt-2 font-sans text-base font-semibold text-rpg-gold-dark">
+                  {character.titulo}
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span
+                  className={[
+                    'inline-block border px-3 py-1 font-sans text-xs font-bold uppercase',
+                    isMob
+                      ? 'border-rpg-hp bg-rpg-hp/10 text-rpg-hp'
+                      : 'border-rpg-forest bg-rpg-forest/10 text-rpg-forest',
+                  ].join(' ')}
+                >
+                  {character.tipo}
+                </span>
+                {meta.map(item => (
+                  <span
+                    key={item.label}
+                    className="border border-rpg-border bg-rpg-parchment px-2.5 py-1 font-sans text-xs text-rpg-ink-dim"
+                  >
+                    {item.label}: <span className="font-semibold text-rpg-ink-dark">{item.value}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </header>
 
-        <div className="flex flex-col gap-4">
-          <DetailSection title="História" icon="📖" content={character.historia} />
-          <DetailSection title="O que sabe" icon="🧠" content={character.o_que_sabe} />
-          <DetailSection title="Personalidade" icon="🎭" content={character.personalidade} />
-          <DetailSection title="Família & Relações" icon="👨‍👩‍👧" content={character.familia_relacoes} />
-        </div>
+        <CharacterProfileDetails character={character} compact />
 
         <div className="mt-8">
           <PixelButton variant="ghost" onClick={onBack}>
@@ -69,27 +82,5 @@ export function CharacterDetailPage({ character, onBack }: CharacterDetailPagePr
         </div>
       </div>
     </div>
-  );
-}
-
-function DetailSection({
-  title,
-  icon,
-  content,
-}: {
-  title: string;
-  icon: string;
-  content?: string;
-}) {
-  return (
-    <section className="border-2 border-rpg-border bg-rpg-parchment p-5 shadow-pixel">
-      <h2 className="pixel-card-title mb-3 flex items-center gap-2">
-        <span>{icon}</span>
-        {title}
-      </h2>
-      <p className="whitespace-pre-wrap font-sans text-base leading-relaxed text-rpg-ink-dim">
-        {content || 'Sem informação registrada.'}
-      </p>
-    </section>
   );
 }

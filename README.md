@@ -7,14 +7,14 @@ Ferramenta web para mestres de RPG organizarem campanhas, histórias, grimório 
 | Camada    | Tecnologias                          |
 |-----------|--------------------------------------|
 | Frontend  | React, TypeScript, Vite, Tailwind CSS, TipTap |
-| Backend   | NestJS, Prisma, PostgreSQL           |
+| Backend   | NestJS, Prisma, PostgreSQL (Neon)  |
 | Monorepo  | npm workspaces                       |
 
 ## Pré-requisitos
 
 - Node.js 18+
-- PostgreSQL 14+
 - npm 9+
+- Conta no [Neon](https://neon.tech) (PostgreSQL gerenciado — usado em dev e produção)
 
 ## Estrutura do projeto
 
@@ -25,7 +25,6 @@ meu-projeto-monorepo/
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma
 │   │   │   └── migrations/   # versionado no Git
-│   │   └── uploads/            # imagens enviadas (ignorado no Git)
 │   └── frontend/         # App React (Vite)
 ├── package.json
 └── README.md
@@ -41,40 +40,50 @@ Na raiz do monorepo:
 npm install
 ```
 
-### 2. Banco de dados
+### 2. Banco de dados (Neon)
 
-Crie um banco PostgreSQL (ex.: `rpg_manager`) e configure o backend:
+O projeto usa **Neon** tanto no desenvolvimento quanto em produção — não é necessário PostgreSQL local.
 
 ```bash
 cp apps/backend/.env-exemple apps/backend/.env
 ```
 
-Edite `apps/backend/.env`:
+No painel do Neon, copie as duas URLs de conexão para `apps/backend/.env`:
+
+| Variável       | Onde pegar no Neon      | Uso                          |
+|----------------|-------------------------|------------------------------|
+| `DATABASE_URL` | Pooled connection       | API em runtime (`backend:dev`) |
+| `DIRECT_URL`   | Direct connection       | Prisma Migrate               |
 
 ```env
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/rpg_manager?schema=public"
+DATABASE_URL="postgresql://usuario:senha@host-pooler.regiao.aws.neon.tech/neondb?sslmode=require"
+DIRECT_URL="postgresql://usuario:senha@host.regiao.aws.neon.tech/neondb?sslmode=require"
 PORT=3001
 ```
+
+> **Dica:** o host do pooler contém `-pooler`; o direto é o mesmo host **sem** `-pooler`.
 
 ### 3. Migrations do Prisma
 
 As migrations em `apps/backend/prisma/migrations/` **devem ficar no Git** — são o histórico do schema compartilhado entre o time.
 
-```bash
-# Aplicar migrations e gerar o client
-cd apps/backend
-npx prisma migrate dev
-npx prisma generate
-```
-
-Em produção ou CI:
+**Primeira vez ou após `git pull`** (fluxo normal no dev com Neon):
 
 ```bash
-cd apps/backend
-npx prisma migrate deploy
+npm run db:setup
 ```
 
-> **Nota:** não adicione `prisma/migrations/` ao `.gitignore`. Apenas arquivos locais como `.env` e `uploads/` devem ser ignorados.
+Isso aplica migrations pendentes (`migrate deploy`) e regenera o Prisma Client.
+
+**Ao criar uma migration nova** (alterou `schema.prisma`):
+
+```bash
+npm run db:migrate:dev
+```
+
+> Com Neon, use `db:migrate` / `db:setup` no dia a dia. Reserve `db:migrate:dev` só para quando você está **escrevendo** uma migration nova.
+
+> **Nota:** não adicione `prisma/migrations/` ao `.gitignore`. Apenas arquivos locais como `.env` devem ser ignorados.
 
 ### 4. Frontend
 
@@ -88,9 +97,17 @@ Conteúdo padrão:
 VITE_API_URL=http://localhost:3001
 ```
 
+> **Imagens:** heróis e personagens do grimório são armazenados na tabela `images` do PostgreSQL (BYTEA). Qualquer PC conectado ao mesmo banco Neon vê as mesmas imagens via `GET /image/:id`.
+
 ## Executar em desenvolvimento
 
-Na raiz do monorepo, em dois terminais:
+Garanta que o `.env` do backend aponta para o Neon e que as migrations estão aplicadas:
+
+```bash
+npm run db:setup   # só na primeira vez ou após git pull
+```
+
+Em dois terminais:
 
 ```bash
 # Terminal 1 — API
@@ -109,11 +126,14 @@ npm run frontend:dev
 ## Scripts úteis
 
 ```bash
-npm run backend:dev      # API em modo watch
+npm run backend:dev      # API com hot-reload (recompila ao salvar)
 npm run backend:build    # Build do backend
 npm run frontend:dev     # Frontend em modo dev
 npm run frontend:build   # Build de produção do frontend
-npm run db:migrate       # prisma migrate dev (workspace backend)
+npm run db:setup         # migrate deploy + generate (dev/prod Neon)
+npm run db:migrate       # aplicar migrations pendentes
+npm run db:migrate:dev   # criar migration nova (schema.prisma alterado)
+npm run db:generate      # regenerar Prisma Client
 ```
 
 ## Módulos da aplicação
@@ -129,7 +149,6 @@ npm run db:migrate       # prisma migrate dev (workspace backend)
 - `.env` e variantes locais (use `.env.example` / `.env-exemple` como modelo)
 - `node_modules/`
 - `dist/` e builds
-- `apps/backend/uploads/` (imagens enviadas pelos usuários)
 
 ## Licença
 

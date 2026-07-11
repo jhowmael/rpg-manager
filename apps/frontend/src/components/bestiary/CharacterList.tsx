@@ -163,7 +163,7 @@ function PaginatedCharacterSection({
         <>
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginated.map(character => (
-              <li key={character.id}>
+              <li key={character.id} className="h-full">
                 <CharacterCard
                   character={character}
                   onView={() => onView(character)}

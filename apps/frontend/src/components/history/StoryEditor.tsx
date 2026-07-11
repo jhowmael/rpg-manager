@@ -6,13 +6,20 @@ import { RichTextEditor, type RichTextEditorHandle } from './RichTextEditor';
 import type { MainStory, SideQuest, SideQuestStatus, StoryType } from '../../types/history';
 import type { Character } from '../../types/character';
 
+export interface StorySaveOptions {
+  continueEditing?: boolean;
+}
+
 interface StoryEditorProps {
   type: StoryType;
   story?: MainStory | SideQuest;
   nextOrdem?: number;
   characters: Character[];
   isSaving?: boolean;
-  onSave: (data: Omit<MainStory, 'id' | 'campanha_id'> | Omit<SideQuest, 'id' | 'campanha_id'>) => void;
+  onSave: (
+    data: Omit<MainStory, 'id' | 'campanha_id'> | Omit<SideQuest, 'id' | 'campanha_id'>,
+    options?: StorySaveOptions,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -22,7 +29,15 @@ const STATUS_OPTIONS: { value: SideQuestStatus; label: string }[] = [
   { value: 'CONCLUIDA', label: 'Concluída' },
 ];
 
-export function StoryEditor({ type, story, nextOrdem = 1, characters, isSaving = false, onSave, onCancel }: StoryEditorProps) {
+export function StoryEditor({
+  type,
+  story,
+  nextOrdem = 1,
+  characters,
+  isSaving = false,
+  onSave,
+  onCancel,
+}: StoryEditorProps) {
   const isSideQuest = type === 'sidequest';
   const isEditing = Boolean(story);
 
@@ -37,26 +52,40 @@ export function StoryEditor({ type, story, nextOrdem = 1, characters, isSaving =
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<RichTextEditorHandle>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const buildPayload = ():
+    | Omit<MainStory, 'id' | 'campanha_id'>
+    | Omit<SideQuest, 'id' | 'campanha_id'>
+    | null => {
     if (!titulo.trim()) {
       setError('O título é obrigatório.');
-      return;
+      return null;
     }
 
     const htmlContent = editorRef.current?.getHTML() ?? conteudo;
 
     if (!stripContent(htmlContent)) {
       setError('Escreva o conteúdo da história.');
-      return;
+      return null;
     }
 
+    setError(null);
+
     if (isSideQuest) {
-      onSave({ titulo: titulo.trim(), conteudo: htmlContent, status });
-    } else {
-      onSave({ titulo: titulo.trim(), conteudo: htmlContent, ordem });
+      return { titulo: titulo.trim(), conteudo: htmlContent, status };
     }
+
+    return { titulo: titulo.trim(), conteudo: htmlContent, ordem };
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = buildPayload();
+    if (payload) onSave(payload);
+  };
+
+  const handleSaveAndContinue = () => {
+    const payload = buildPayload();
+    if (payload) onSave(payload, { continueEditing: true });
   };
 
   const title = isEditing
@@ -153,6 +182,17 @@ export function StoryEditor({ type, story, nextOrdem = 1, characters, isSaving =
             <span className="flex items-center gap-2">
               <Save size={14} />
               {isSaving ? 'Salvando...' : 'Salvar'}
+            </span>
+          </PixelButton>
+          <PixelButton
+            type="button"
+            variant="forest"
+            disabled={isSaving}
+            onClick={handleSaveAndContinue}
+          >
+            <span className="flex items-center gap-2">
+              <Save size={14} />
+              {isSaving ? 'Salvando...' : 'Salvar e continuar'}
             </span>
           </PixelButton>
           <PixelButton type="button" variant="ghost" onClick={onCancel} disabled={isSaving}>

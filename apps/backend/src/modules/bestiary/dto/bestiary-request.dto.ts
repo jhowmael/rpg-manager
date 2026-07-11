@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export enum BestiaryType {
   NPC = 'NPC',
@@ -16,11 +16,26 @@ export class BestiaryRequestDto {
   @IsString()
   nome: string;
 
+  @ApiPropertyOptional({ example: 'Ferreiro da vila' })
+  @IsOptional()
+  @IsString()
+  titulo?: string;
+
+  @ApiPropertyOptional({ example: 'Humano' })
+  @IsOptional()
+  @IsString()
+  raca?: string;
+
+  @ApiPropertyOptional({ example: 'Guerreiro' })
+  @IsOptional()
+  @IsString()
+  classe?: string;
+
   @ApiProperty({ enum: BestiaryType })
   @IsEnum(BestiaryType)
   tipo: BestiaryType;
 
-  @ApiPropertyOptional({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479.webp' })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   imagem_id?: string;
@@ -30,15 +45,21 @@ export class BestiaryRequestDto {
   @IsString()
   historia?: string;
 
+  @ApiPropertyOptional({ example: 'Alto, cicatriz no olho, fala com sotaque do norte' })
+  @IsOptional()
+  @IsString()
+  caracteristicas?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   o_que_sabe?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: [String], example: ['Bravo', 'Orgulhoso'] })
   @IsOptional()
-  @IsString()
-  personalidade?: string;
+  @IsArray()
+  @IsString({ each: true })
+  personalidade?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

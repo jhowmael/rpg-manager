@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { StoryEditor } from '../components/history/StoryEditor';
+import { StoryEditor, type StorySaveOptions } from '../components/history/StoryEditor';
 import { StoryList } from '../components/history/StoryList';
 import { StoryViewer } from '../components/history/StoryViewer';
 import { CharacterDetailPage } from '../components/history/CharacterDetailPage';
-import { StopAllAudioButton } from '../components/history/StopAllAudioButton';
+import { AudioControllerPanel } from '../components/history/AudioControllerPanel';
 import { CharacterNavigationProvider } from '../context/CharacterNavigationContext';
 import { stopAllAudio } from '../hooks/useAudioPlayer';
 import { ApiError } from '../services/api';
@@ -131,22 +131,36 @@ export function HistoryPage({ campaignId, campaignName, characters }: HistoryPag
     return sideQuests.find(s => s.id === id);
   };
 
-  const handleSaveMain = async (data: Omit<MainStory, 'id' | 'campanha_id'>) => {
+  const handleSaveMain = async (
+    data: Omit<MainStory, 'id' | 'campanha_id'>,
+    options?: StorySaveOptions,
+  ) => {
     try {
       setIsSaving(true);
       if (editorState?.story) {
         const updated = await updateMainStory(editorState.story.id, data);
         setMainStories(prev => prev.map(s => (s.id === updated.id ? updated : s)));
-        showToast('✅ Capítulo atualizado!');
+        if (options?.continueEditing) {
+          setEditorState({ type: 'main', story: updated });
+          showToast('✅ Capítulo salvo! Continue editando.');
+        } else {
+          showToast('✅ Capítulo atualizado!');
+          goToList();
+        }
       } else {
         const created = await createMainStory({
           campanha_id: campaignId,
           ...data,
         });
         setMainStories(prev => [...prev, created]);
-        showToast('✨ Novo capítulo criado!');
+        if (options?.continueEditing) {
+          setEditorState({ type: 'main', story: created });
+          showToast('✨ Capítulo criado! Continue editando.');
+        } else {
+          showToast('✨ Novo capítulo criado!');
+          goToList();
+        }
       }
-      goToList();
     } catch (saveError) {
       const message =
         saveError instanceof ApiError
@@ -158,22 +172,36 @@ export function HistoryPage({ campaignId, campaignName, characters }: HistoryPag
     }
   };
 
-  const handleSaveSideQuest = async (data: Omit<SideQuest, 'id' | 'campanha_id'>) => {
+  const handleSaveSideQuest = async (
+    data: Omit<SideQuest, 'id' | 'campanha_id'>,
+    options?: StorySaveOptions,
+  ) => {
     try {
       setIsSaving(true);
       if (editorState?.story) {
         const updated = await updateSideQuest(editorState.story.id, data);
         setSideQuests(prev => prev.map(s => (s.id === updated.id ? updated : s)));
-        showToast('✅ Side quest atualizada!');
+        if (options?.continueEditing) {
+          setEditorState({ type: 'sidequest', story: updated });
+          showToast('✅ Side quest salva! Continue editando.');
+        } else {
+          showToast('✅ Side quest atualizada!');
+          goToList();
+        }
       } else {
         const created = await createSideQuest({
           campanha_id: campaignId,
           ...data,
         });
         setSideQuests(prev => [...prev, created]);
-        showToast('✨ Nova side quest criada!');
+        if (options?.continueEditing) {
+          setEditorState({ type: 'sidequest', story: created });
+          showToast('✨ Side quest criada! Continue editando.');
+        } else {
+          showToast('✨ Nova side quest criada!');
+          goToList();
+        }
       }
-      goToList();
     } catch (saveError) {
       const message =
         saveError instanceof ApiError
@@ -228,7 +256,7 @@ export function HistoryPage({ campaignId, campaignName, characters }: HistoryPag
 
   const pageShell = (content: ReactNode) => (
     <CharacterNavigationProvider onOpenCharacter={openCharacter}>
-      <StopAllAudioButton />
+      <AudioControllerPanel />
       {campaignBanner}
       {content}
       {overlayCharacter && (
@@ -280,11 +308,11 @@ export function HistoryPage({ campaignId, campaignName, characters }: HistoryPag
         nextOrdem={nextOrdem}
         characters={campaignCharacters}
         isSaving={isSaving}
-        onSave={data => {
+        onSave={(data, options) => {
           if (editorState.type === 'main') {
-            void handleSaveMain(data as Omit<MainStory, 'id' | 'campanha_id'>);
+            void handleSaveMain(data as Omit<MainStory, 'id' | 'campanha_id'>, options);
           } else {
-            void handleSaveSideQuest(data as Omit<SideQuest, 'id' | 'campanha_id'>);
+            void handleSaveSideQuest(data as Omit<SideQuest, 'id' | 'campanha_id'>, options);
           }
         }}
         onCancel={goToList}

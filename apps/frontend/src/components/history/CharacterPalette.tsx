@@ -2,7 +2,7 @@ import { Skull, User } from 'lucide-react';
 import {
   CHARACTER_DRAG_TYPE,
   type CharacterDragPayload,
-} from '../../data/mockCharacters';
+} from '../../data/characterDrag';
 import type { Character } from '../../types/character';
 import { useCharacterNavigationOptional } from '../../context/CharacterNavigationContext';
 

@@ -6,10 +6,13 @@
     "apps/*"
   ],
   "scripts": {
-    "backend:dev": "npm run start:dev --workspace=apps/backend",
+    "backend:dev": "npm --prefix apps/backend run start:dev",
     "backend:build": "npm run build --workspace=apps/backend",
     "frontend:dev": "npm run dev --workspace=apps/frontend",
     "frontend:build": "npm run build --workspace=apps/frontend",
-    "db:migrate": "npm run prisma:migrate --workspace=apps/backend"
+    "db:migrate": "npm run prisma:migrate --workspace=apps/backend",
+    "db:migrate:dev": "npm run prisma:migrate:dev --workspace=apps/backend",
+    "db:generate": "npm run prisma:generate --workspace=apps/backend",
+    "db:setup": "npm run db:migrate && npm run db:generate"
   }
 }

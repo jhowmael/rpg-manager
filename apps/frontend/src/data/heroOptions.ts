@@ -7,6 +7,10 @@ export const HERO_RACES = [
   'Gnomo',
   'Meio-Elfo',
   'Meio-Orc',
+  'Half-Elf',
+  'Orc',
+  'Troll',
+  'Goblin',
   'Tiefling',
 ] as const;
 

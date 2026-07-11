@@ -4,11 +4,15 @@ export interface Character {
   id: string;
   campanha_id: string;
   nome: string;
+  titulo?: string;
+  raca?: string;
+  classe?: string;
   tipo: CharacterType;
   imagem_id?: string;
   historia?: string;
+  caracteristicas?: string;
   o_que_sabe?: string;
-  personalidade?: string;
+  personalidade?: string[];
   familia_relacoes?: string;
 }
 

@@ -1,6 +1,11 @@
 import {
   Controller,
+  Get,
+  Header,
+  Param,
+  ParseUUIDPipe,
   Post,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -9,7 +14,10 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { ImageService } from './image.service';
@@ -38,5 +46,21 @@ export class ImageController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<ImageUploadResponseDto> {
     return this.imageService.upload(file);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Buscar imagem por ID' })
+  @ApiParam({ name: 'id', description: 'UUID da imagem' })
+  @ApiOkResponse({ description: 'Binário da imagem' })
+  @ApiNotFoundResponse()
+  @Header('Cache-Control', 'public, max-age=31536000, immutable')
+  async findById(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<StreamableFile> {
+    const image = await this.imageService.findById(id);
+    return new StreamableFile(image.data, {
+      type: image.mime_type,
+      disposition: 'inline',
+    });
   }
 }

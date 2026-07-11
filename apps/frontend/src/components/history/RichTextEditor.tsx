@@ -16,7 +16,7 @@ import {
 import { EditorSidePanel } from './EditorSidePanel';
 import { getStoryExtensions, STORY_CONTENT_CLASS } from './storyExtensions';
 import { AUDIO_DRAG_TYPE, type AudioDragPayload } from '../../data/soundLibrary';
-import { CHARACTER_DRAG_TYPE, type CharacterDragPayload } from '../../data/mockCharacters';
+import { CHARACTER_DRAG_TYPE, type CharacterDragPayload } from '../../data/characterDrag';
 import { readImageAsDataUrl, validateImageFile } from '../../utils/imageUpload';
 import type { Character } from '../../types/character';
 

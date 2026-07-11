@@ -4,7 +4,13 @@ import { PixelButton } from '../ui/PixelButton';
 import { PixelInput } from '../ui/PixelInput';
 import { PixelTextarea } from '../ui/PixelTextarea';
 import { ImageUploadField } from '../ui/ImageUploadField';
+import { PersonalityTagField } from '../ui/PersonalityTagField';
+import {
+  CHARACTER_CLASSES,
+  CHARACTER_RACES,
+} from '../../data/characterOptions';
 import type { Character, CharacterFormData, CharacterType } from '../../types/character';
+import { normalizePersonality } from '../../utils/characterProfile';
 
 interface CharacterFormProps {
   character?: Character;
@@ -13,6 +19,9 @@ interface CharacterFormProps {
   onSave: (data: CharacterFormData, imageFile?: File | null) => void;
   onCancel: () => void;
 }
+
+const selectClass =
+  'pixel-corners w-full border-2 border-rpg-border bg-rpg-parchment px-3 py-2 font-sans text-base text-rpg-ink outline-none focus:border-rpg-gold disabled:opacity-60';
 
 export function CharacterForm({
   character,
@@ -25,9 +34,15 @@ export function CharacterForm({
   const tipo = character?.tipo ?? fixedTipo;
 
   const [nome, setNome] = useState(character?.nome ?? '');
+  const [titulo, setTitulo] = useState(character?.titulo ?? '');
+  const [raca, setRaca] = useState(character?.raca ?? '');
+  const [classe, setClasse] = useState(character?.classe ?? '');
   const [historia, setHistoria] = useState(character?.historia ?? '');
+  const [caracteristicas, setCaracteristicas] = useState(character?.caracteristicas ?? '');
   const [oQueSabe, setOQueSabe] = useState(character?.o_que_sabe ?? '');
-  const [personalidade, setPersonalidade] = useState(character?.personalidade ?? '');
+  const [personalidade, setPersonalidade] = useState<string[]>(
+    normalizePersonality(character?.personalidade),
+  );
   const [familiaRelacoes, setFamiliaRelacoes] = useState(character?.familia_relacoes ?? '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [keepExistingImage, setKeepExistingImage] = useState(Boolean(character?.imagem_id));
@@ -44,11 +59,15 @@ export function CharacterForm({
     onSave(
       {
         nome: nome.trim(),
+        titulo: titulo.trim() || undefined,
+        raca: raca || undefined,
+        classe: classe || undefined,
         tipo,
         imagem_id: keepExistingImage ? character?.imagem_id : undefined,
         historia: historia.trim() || undefined,
+        caracteristicas: caracteristicas.trim() || undefined,
         o_que_sabe: oQueSabe.trim() || undefined,
-        personalidade: personalidade.trim() || undefined,
+        personalidade,
         familia_relacoes: familiaRelacoes.trim() || undefined,
       },
       imageFile,
@@ -98,6 +117,56 @@ export function CharacterForm({
           disabled={isSaving}
         />
 
+        <PixelInput
+          label="Título"
+          placeholder={tipo === 'MOB' ? 'Ex: Capitão da tribo goblin' : 'Ex: Ferreiro da vila'}
+          value={titulo}
+          onChange={e => setTitulo(e.target.value)}
+          disabled={isSaving}
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="raca" className="pixel-label">
+              Raça
+            </label>
+            <select
+              id="raca"
+              value={raca}
+              onChange={e => setRaca(e.target.value)}
+              disabled={isSaving}
+              className={selectClass}
+            >
+              <option value="">Selecione…</option>
+              {CHARACTER_RACES.map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="classe" className="pixel-label">
+              Classe
+            </label>
+            <select
+              id="classe"
+              value={classe}
+              onChange={e => setClasse(e.target.value)}
+              disabled={isSaving}
+              className={selectClass}
+            >
+              <option value="">Selecione…</option>
+              {CHARACTER_CLASSES.map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2">
           <span className="pixel-label">Tipo</span>
           <div
@@ -123,6 +192,14 @@ export function CharacterForm({
         />
 
         <PixelTextarea
+          label="Características"
+          placeholder="Aparência, voz, manias, equipamento marcante..."
+          value={caracteristicas}
+          onChange={e => setCaracteristicas(e.target.value)}
+          disabled={isSaving}
+        />
+
+        <PixelTextarea
           label="O que sabe"
           placeholder="Segredos, informações que pode revelar aos jogadores..."
           value={oQueSabe}
@@ -130,11 +207,9 @@ export function CharacterForm({
           disabled={isSaving}
         />
 
-        <PixelTextarea
-          label="Personalidade"
-          placeholder="Tom de voz, traços, motivações..."
+        <PersonalityTagField
           value={personalidade}
-          onChange={e => setPersonalidade(e.target.value)}
+          onChange={setPersonalidade}
           disabled={isSaving}
         />
 
