@@ -1,9 +1,76 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 export enum BestiaryType {
   NPC = 'NPC',
   MOB = 'MOB',
+}
+
+export class CharacterAttributesDto {
+  @ApiProperty({ example: 10 })
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  forca: number;
+
+  @ApiProperty({ example: 10 })
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  destreza: number;
+
+  @ApiProperty({ example: 10 })
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  constituicao: number;
+
+  @ApiProperty({ example: 10 })
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  inteligencia: number;
+
+  @ApiProperty({ example: 10 })
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  sabedoria: number;
+
+  @ApiProperty({ example: 10 })
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  carisma: number;
+}
+
+export class CharacterAbilityDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty({ example: 'Ataque Furtivo' })
+  @IsNotEmpty()
+  @IsString()
+  nome: string;
+
+  @ApiPropertyOptional({ example: 'Causa dano extra quando tem vantagem.' })
+  @IsOptional()
+  @IsString()
+  descricao?: string;
 }
 
 export class BestiaryRequestDto {
@@ -65,6 +132,19 @@ export class BestiaryRequestDto {
   @IsOptional()
   @IsString()
   familia_relacoes?: string;
+
+  @ApiPropertyOptional({ type: CharacterAttributesDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CharacterAttributesDto)
+  atributos?: CharacterAttributesDto;
+
+  @ApiPropertyOptional({ type: [CharacterAbilityDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CharacterAbilityDto)
+  habilidades?: CharacterAbilityDto[];
 }
 
 export class BestiaryUpdateDto extends PartialType(BestiaryRequestDto) {}

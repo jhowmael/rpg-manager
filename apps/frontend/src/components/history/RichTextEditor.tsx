@@ -17,8 +17,10 @@ import { EditorSidePanel } from './EditorSidePanel';
 import { getStoryExtensions, STORY_CONTENT_CLASS } from './storyExtensions';
 import { AUDIO_DRAG_TYPE, type AudioDragPayload } from '../../data/soundLibrary';
 import { CHARACTER_DRAG_TYPE, type CharacterDragPayload } from '../../data/characterDrag';
+import { MAP_DRAG_TYPE, type MapDragPayload } from '../../data/mapDrag';
 import { readImageAsDataUrl, validateImageFile } from '../../utils/imageUpload';
 import type { Character } from '../../types/character';
+import type { CampaignMap } from '../../types/map';
 
 export interface RichTextEditorHandle {
   getHTML: () => string;
@@ -29,6 +31,7 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   characters?: Character[];
+  maps?: CampaignMap[];
 }
 
 interface ToolbarButtonProps {
@@ -43,6 +46,7 @@ function ToolbarButton({ onClick, active, title, children }: ToolbarButtonProps)
     <button
       type="button"
       title={title}
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={[
         'flex h-8 w-8 items-center justify-center border-2 transition-colors',
@@ -103,11 +107,29 @@ function insertCharacterTrigger(editor: Editor, payload: CharacterDragPayload, p
   }
 }
 
+function insertMapTrigger(editor: Editor, payload: MapDragPayload, pos?: number) {
+  const node = {
+    type: 'mapTrigger',
+    attrs: {
+      mapId: payload.mapId,
+      nome: payload.nome,
+      imagemId: payload.imagemId ?? null,
+    },
+  };
+
+  if (pos !== undefined) {
+    editor.chain().insertContentAt(pos, node).run();
+  } else {
+    editor.chain().focus().insertContent(node).run();
+  }
+}
+
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor({
   content,
   onChange,
   placeholder = 'Escreva a história aqui…',
   characters = [],
+  maps = [],
 }, ref) {
   const editorRef = useRef<Editor | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -182,6 +204,18 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           return true;
         }
 
+        const mapRaw = event.dataTransfer?.getData(MAP_DRAG_TYPE);
+        if (mapRaw) {
+          event.preventDefault();
+          const payload = JSON.parse(mapRaw) as MapDragPayload;
+          if (coordinates) {
+            insertMapTrigger(ed, payload, coordinates.pos);
+          } else {
+            insertMapTrigger(ed, payload);
+          }
+          return true;
+        }
+
         const audioRaw = event.dataTransfer?.getData(AUDIO_DRAG_TYPE);
         if (!audioRaw) return false;
 
@@ -205,7 +239,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           if (
             hasImageFile ||
             types.includes(AUDIO_DRAG_TYPE) ||
-            types.includes(CHARACTER_DRAG_TYPE)
+            types.includes(CHARACTER_DRAG_TYPE) ||
+            types.includes(MAP_DRAG_TYPE)
           ) {
             event.preventDefault();
             return true;
@@ -248,6 +283,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
   const handleInsertCharacter = useCallback((payload: CharacterDragPayload) => {
     if (editorRef.current) {
       insertCharacterTrigger(editorRef.current, payload);
+      syncContent();
+    }
+  }, [syncContent]);
+
+  const handleInsertMap = useCallback((payload: MapDragPayload) => {
+    if (editorRef.current) {
+      insertMapTrigger(editorRef.current, payload);
       syncContent();
     }
   }, [syncContent]);
@@ -319,6 +361,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           >
             <Quote size={16} />
           </ToolbarButton>
+          <ToolbarButton
+            title="Destaque"
+            onClick={() => editor.chain().focus().toggleTealQuote().run()}
+            active={editor.isActive('tealQuote')}
+          >
+            <Quote size={16} className="text-rpg-mana" />
+          </ToolbarButton>
 
           <span className="mx-1 w-px self-stretch bg-rpg-border" />
 
@@ -351,7 +400,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
       <EditorSidePanel
         characters={characters}
+        maps={maps}
         onInsertCharacter={handleInsertCharacter}
+        onInsertMap={handleInsertMap}
         onInsertAudio={handleInsertAudio}
       />
     </div>

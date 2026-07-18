@@ -28,7 +28,7 @@ export function CharacterList({
   onDelete,
 }: CharacterListProps) {
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8">
+    <div className="flex flex-col gap-8">
       <header className="text-center">
         <div className="mb-3 flex items-center justify-center gap-2">
           <span className="text-2xl">📖</span>
@@ -36,7 +36,7 @@ export function CharacterList({
           <span className="text-2xl">📖</span>
         </div>
         <p className="font-sans text-base text-rpg-ink-dim">
-          NPCs, mobs e criaturas da campanha
+          NPCs, mobs, criaturas e mapas da campanha
         </p>
       </header>
 

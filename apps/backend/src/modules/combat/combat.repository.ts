@@ -154,6 +154,8 @@ export class CombatRepository {
       ordem_vez: fighter.ordemVez,
       status: fighter.status,
       ativo: fighter.status === 'active',
+      atributos: fighter.atributos ?? undefined,
+      habilidades: fighter.habilidades ?? undefined,
       statusEffects: {
         create: [
           ...(fighter.buffs ?? []).map(effect => this.mapEffectCreate(effect, 'BUFF')),

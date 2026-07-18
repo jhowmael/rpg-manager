@@ -88,4 +88,13 @@ export class CombatParticipantRequestDto {
   @ValidateNested({ each: true })
   @Type(() => CombatStatusEffectRequestDto)
   debuffs?: CombatStatusEffectRequestDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  atributos?: Record<string, number>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  habilidades?: Array<{ id?: string; nome: string; descricao?: string }>;
 }

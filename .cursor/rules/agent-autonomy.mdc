@@ -1,0 +1,10 @@
+---
+description: Preferência de autonomia do agente — executar e editar sem pedir aprovação
+alwaysApply: true
+---
+
+# Autonomia do agente
+
+- Rode comandos você mesmo (migrate, generate, build, testes, etc.). Não peça para o usuário rodar.
+- Ao criar ou editar arquivos, faça de cara. Não peça aprovação de edit.
+- Só pergunte quando houver ambiguidade real de requisito ou decisão irreversível (ex.: force push, apagar dados).

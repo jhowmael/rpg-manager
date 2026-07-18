@@ -13,10 +13,12 @@ import {
   updateCampaign,
 } from './services/campaignService';
 import { fetchBestiary } from './services/bestiaryService';
+import { fetchMaps } from './services/mapService';
 import { fetchCombats } from './services/combatService';
 import { fetchHeroes } from './services/heroService';
 import type { Campaign, CreateCampaignInput, UpdateCampaignInput } from './types/campaign';
 import type { Character } from './types/character';
+import type { CampaignMap } from './types/map';
 import type { Hero } from './types/hero';
 import type { Combat } from './types/combat';
 import { ApiError } from './services/api';
@@ -28,6 +30,7 @@ export default function App() {
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(true);
   const [campaignsError, setCampaignsError] = useState<string | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [maps, setMaps] = useState<CampaignMap[]>([]);
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [combats, setCombats] = useState<Combat[]>([]);
 
@@ -54,16 +57,19 @@ export default function App() {
 
   const loadCampaignData = useCallback(async (campaignId: string) => {
     try {
-      const [bestiary, campaignHeroes, campaignCombats] = await Promise.all([
+      const [bestiary, campaignMaps, campaignHeroes, campaignCombats] = await Promise.all([
         fetchBestiary(campaignId),
+        fetchMaps(campaignId),
         fetchHeroes(campaignId),
         fetchCombats(campaignId),
       ]);
       setCharacters(bestiary);
+      setMaps(campaignMaps);
       setHeroes(campaignHeroes);
       setCombats(campaignCombats);
     } catch {
       setCharacters([]);
+      setMaps([]);
       setHeroes([]);
       setCombats([]);
     }
@@ -78,6 +84,7 @@ export default function App() {
       void loadCampaignData(selectedCampaign.id);
     } else {
       setCharacters([]);
+      setMaps([]);
       setHeroes([]);
       setCombats([]);
     }
@@ -110,6 +117,7 @@ export default function App() {
     setCampaigns(prev => prev.filter(item => item.id !== id));
     setSelectedCampaign(current => (current?.id === id ? null : current));
     setCharacters([]);
+    setMaps([]);
     setHeroes([]);
     setCombats([]);
     if (activeModule !== 'campaigns') {
@@ -139,6 +147,7 @@ export default function App() {
             campaignId={selectedCampaign!.id}
             campaignName={selectedCampaign!.nome}
             characters={characters}
+            maps={maps}
           />
         );
       case 'bestiary':
@@ -147,6 +156,7 @@ export default function App() {
             campaignId={selectedCampaign!.id}
             campaignName={selectedCampaign!.nome}
             onCharactersChange={setCharacters}
+            onMapsChange={setMaps}
           />
         );
       case 'heroes':
@@ -166,6 +176,7 @@ export default function App() {
             heroes={heroes}
             combats={combats}
             onCombatsChange={setCombats}
+            onCharactersChange={setCharacters}
           />
         );
       default:

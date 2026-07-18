@@ -5,13 +5,19 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
 import { AudioTriggerExtension } from './extensions/AudioTriggerExtension';
 import { CharacterTriggerExtension } from './extensions/CharacterTriggerExtension';
+import { MapTriggerExtension } from './extensions/MapTriggerExtension';
+import { StoryBlockquoteExtension } from './extensions/StoryBlockquoteExtension';
+import { TealQuoteExtension } from './extensions/TealQuoteExtension';
 
 export function getStoryExtensions(options?: { placeholder?: string }): Extensions {
   const extensions: Extensions = [
     StarterKit.configure({
       heading: { levels: [2, 3] },
+      blockquote: false,
     }),
     Underline,
+    StoryBlockquoteExtension,
+    TealQuoteExtension,
     Image.configure({
       allowBase64: true,
       HTMLAttributes: {
@@ -20,6 +26,7 @@ export function getStoryExtensions(options?: { placeholder?: string }): Extensio
     }),
     AudioTriggerExtension,
     CharacterTriggerExtension,
+    MapTriggerExtension,
   ];
 
   if (options?.placeholder) {

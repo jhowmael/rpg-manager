@@ -1,3 +1,8 @@
+import type { CharacterAbility, CharacterAttributes } from './character';
+
+export type { CharacterAbility, CharacterAttributes };
+export { DEFAULT_ATTRIBUTES } from './character';
+
 export type FighterSource = 'HERO' | 'NPC' | 'MOB' | 'CUSTOM';
 export type EffectType = 'BUFF' | 'DEBUFF';
 export type CombatPhase = 'setup' | 'initiative' | 'battle' | 'finished';
@@ -25,6 +30,8 @@ export interface CombatFighter {
   buffs: StatusEffect[];
   debuffs: StatusEffect[];
   status: FighterStatus;
+  atributos?: CharacterAttributes;
+  habilidades?: CharacterAbility[];
 }
 
 export interface Combat {
@@ -49,4 +56,9 @@ export interface NewFighterData {
   vidaMaxima: number;
   vidaAtual: number;
   ca: number;
+  atributos?: CharacterAttributes;
+  habilidades?: CharacterAbility[];
+  /** Quando true, cria no grimório antes de adicionar ao combate */
+  registerInBestiary?: boolean;
+  bestiaryTipo?: 'NPC' | 'MOB';
 }

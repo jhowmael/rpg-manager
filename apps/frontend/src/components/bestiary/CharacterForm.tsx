@@ -9,7 +9,14 @@ import {
   CHARACTER_CLASSES,
   CHARACTER_RACES,
 } from '../../data/characterOptions';
-import type { Character, CharacterFormData, CharacterType } from '../../types/character';
+import {
+  DEFAULT_ATTRIBUTES,
+  type Character,
+  type CharacterAbility,
+  type CharacterAttributes,
+  type CharacterFormData,
+  type CharacterType,
+} from '../../types/character';
 import { normalizePersonality } from '../../utils/characterProfile';
 
 interface CharacterFormProps {
@@ -22,6 +29,18 @@ interface CharacterFormProps {
 
 const selectClass =
   'pixel-corners w-full border-2 border-rpg-border bg-rpg-parchment px-3 py-2 font-sans text-base text-rpg-ink outline-none focus:border-rpg-gold disabled:opacity-60';
+
+const attrInputClass =
+  'pixel-corners w-full border-2 border-rpg-border bg-rpg-parchment px-2 py-2 text-center font-sans text-base text-rpg-ink outline-none focus:border-rpg-gold disabled:opacity-60';
+
+const ATTRIBUTE_FIELDS: { key: keyof CharacterAttributes; label: string }[] = [
+  { key: 'forca', label: 'FOR' },
+  { key: 'destreza', label: 'DES' },
+  { key: 'constituicao', label: 'CON' },
+  { key: 'inteligencia', label: 'INT' },
+  { key: 'sabedoria', label: 'SAB' },
+  { key: 'carisma', label: 'CAR' },
+];
 
 export function CharacterForm({
   character,
@@ -37,6 +56,14 @@ export function CharacterForm({
   const [titulo, setTitulo] = useState(character?.titulo ?? '');
   const [raca, setRaca] = useState(character?.raca ?? '');
   const [classe, setClasse] = useState(character?.classe ?? '');
+  const [atributos, setAtributos] = useState<CharacterAttributes>(
+    character?.atributos ?? DEFAULT_ATTRIBUTES,
+  );
+  const [habilidades, setHabilidades] = useState<CharacterAbility[]>(
+    character?.habilidades ?? [],
+  );
+  const [novaHabilidadeNome, setNovaHabilidadeNome] = useState('');
+  const [novaHabilidadeDescricao, setNovaHabilidadeDescricao] = useState('');
   const [historia, setHistoria] = useState(character?.historia ?? '');
   const [caracteristicas, setCaracteristicas] = useState(character?.caracteristicas ?? '');
   const [oQueSabe, setOQueSabe] = useState(character?.o_que_sabe ?? '');
@@ -47,6 +74,34 @@ export function CharacterForm({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [keepExistingImage, setKeepExistingImage] = useState(Boolean(character?.imagem_id));
   const [error, setError] = useState<string | null>(null);
+
+  const updateAtributo = (key: keyof CharacterAttributes, value: string) => {
+    const parsed = Number.parseInt(value, 10);
+    setAtributos(prev => ({
+      ...prev,
+      [key]: Number.isNaN(parsed) ? 0 : parsed,
+    }));
+  };
+
+  const addHabilidade = () => {
+    const nomeHabilidade = novaHabilidadeNome.trim();
+    if (!nomeHabilidade) return;
+
+    setHabilidades(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        nome: nomeHabilidade,
+        descricao: novaHabilidadeDescricao.trim(),
+      },
+    ]);
+    setNovaHabilidadeNome('');
+    setNovaHabilidadeDescricao('');
+  };
+
+  const removeHabilidade = (id: string) => {
+    setHabilidades(prev => prev.filter(h => h.id !== id));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +124,8 @@ export function CharacterForm({
         o_que_sabe: oQueSabe.trim() || undefined,
         personalidade,
         familia_relacoes: familiaRelacoes.trim() || undefined,
+        atributos,
+        habilidades,
       },
       imageFile,
     );
@@ -182,6 +239,102 @@ export function CharacterForm({
             <span className="font-normal text-rpg-ink-faded">(fixo)</span>
           </div>
         </div>
+
+        <section className="flex flex-col gap-3 border-2 border-rpg-border bg-rpg-parchment p-4">
+          <h2 className="pixel-label">Atributos</h2>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {ATTRIBUTE_FIELDS.map(({ key, label }) => (
+              <div key={key} className="flex flex-col gap-1">
+                <label htmlFor={`attr-${key}`} className="pixel-label text-center">
+                  {label}
+                </label>
+                <input
+                  id={`attr-${key}`}
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={atributos[key]}
+                  onChange={e => updateAtributo(key, e.target.value)}
+                  disabled={isSaving}
+                  className={attrInputClass}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-3 border-2 border-rpg-border bg-rpg-parchment p-4">
+          <h2 className="pixel-label">Habilidades</h2>
+
+          {habilidades.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {habilidades.map(habilidade => (
+                <li
+                  key={habilidade.id}
+                  className="flex items-start justify-between gap-3 border-2 border-rpg-border bg-rpg-panel px-3 py-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sans text-sm font-semibold text-rpg-ink-dark">
+                      {habilidade.nome}
+                    </p>
+                    {habilidade.descricao && (
+                      <p className="mt-0.5 font-sans text-sm text-rpg-ink-dim">
+                        {habilidade.descricao}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeHabilidade(habilidade.id)}
+                    disabled={isSaving}
+                    className="shrink-0 font-sans text-xs font-semibold text-rpg-hp hover:underline disabled:opacity-60"
+                  >
+                    Remover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex flex-1 flex-col gap-2">
+              <label htmlFor="habilidade-nome" className="pixel-label">
+                Nome
+              </label>
+              <input
+                id="habilidade-nome"
+                type="text"
+                placeholder="Ex: Visão no Escuro"
+                value={novaHabilidadeNome}
+                onChange={e => setNovaHabilidadeNome(e.target.value)}
+                disabled={isSaving}
+                className="pixel-corners w-full border-2 border-rpg-border bg-rpg-parchment px-3 py-2 font-sans text-base text-rpg-ink outline-none focus:border-rpg-gold disabled:opacity-60"
+              />
+            </div>
+            <div className="flex flex-[2] flex-col gap-2">
+              <label htmlFor="habilidade-descricao" className="pixel-label">
+                Descrição
+              </label>
+              <input
+                id="habilidade-descricao"
+                type="text"
+                placeholder="O que essa habilidade faz..."
+                value={novaHabilidadeDescricao}
+                onChange={e => setNovaHabilidadeDescricao(e.target.value)}
+                disabled={isSaving}
+                className="pixel-corners w-full border-2 border-rpg-border bg-rpg-parchment px-3 py-2 font-sans text-base text-rpg-ink outline-none focus:border-rpg-gold disabled:opacity-60"
+              />
+            </div>
+            <PixelButton
+              type="button"
+              variant="ghost"
+              onClick={addHabilidade}
+              disabled={isSaving || !novaHabilidadeNome.trim()}
+            >
+              Adicionar
+            </PixelButton>
+          </div>
+        </section>
 
         <PixelTextarea
           label="História"

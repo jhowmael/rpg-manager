@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BestiaryType } from './bestiary-request.dto';
+import {
+  BestiaryType,
+  CharacterAbilityDto,
+  CharacterAttributesDto,
+} from './bestiary-request.dto';
 
 export class BestiaryResponseDto {
   @ApiProperty()
@@ -40,4 +44,10 @@ export class BestiaryResponseDto {
 
   @ApiPropertyOptional()
   familia_relacoes?: string;
+
+  @ApiPropertyOptional()
+  atributos?: Record<string, number>;
+
+  @ApiPropertyOptional({ type: [CharacterAbilityDto] })
+  habilidades?: CharacterAbilityDto[];
 }

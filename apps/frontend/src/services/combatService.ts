@@ -39,6 +39,8 @@ function mapCombatToApi(combat: Combat): Record<string, unknown> {
       status: fighter.status,
       buffs: fighter.buffs,
       debuffs: fighter.debuffs,
+      atributos: fighter.atributos,
+      habilidades: fighter.habilidades,
     })),
   };
 }

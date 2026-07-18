@@ -1,12 +1,11 @@
 import type { Combat, CombatFighter, FighterStatus } from '../types/combat';
 
 export function getFighterStatus(fighter: CombatFighter): FighterStatus {
-  if (fighter.status) return fighter.status;
-  return fighter.vidaAtual <= 0 ? 'dead' : 'active';
+  return fighter.status ?? 'active';
 }
 
 export function isFighterInBattle(fighter: CombatFighter): boolean {
-  return getFighterStatus(fighter) === 'active' && fighter.vidaAtual > 0;
+  return getFighterStatus(fighter) === 'active';
 }
 
 export const FIGHTER_STATUS_LABELS: Record<FighterStatus, string> = {

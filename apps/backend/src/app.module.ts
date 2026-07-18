@@ -6,6 +6,7 @@ import { HeroModule } from './modules/hero/hero.module';
 import { MainStoryModule } from './modules/history/main-story/main-story.module';
 import { SideQuestModule } from './modules/history/side-quest/side-quest.module';
 import { BestiaryModule } from './modules/bestiary/bestiary.module';
+import { MapsModule } from './modules/maps/maps.module';
 import { CombatModule } from './modules/combat/combat.module';
 import { ImageModule } from './modules/image/image.module';
 
@@ -20,6 +21,7 @@ import { ImageModule } from './modules/image/image.module';
     MainStoryModule,
     SideQuestModule,
     BestiaryModule,
+    MapsModule,
     CombatModule,
     ImageModule,
   ],

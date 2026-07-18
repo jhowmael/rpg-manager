@@ -41,4 +41,10 @@ export class CombatParticipantResponseDto {
 
   @ApiProperty({ type: [CombatStatusEffectResponseDto] })
   debuffs: CombatStatusEffectResponseDto[];
+
+  @ApiPropertyOptional()
+  atributos?: Record<string, number>;
+
+  @ApiPropertyOptional()
+  habilidades?: Array<{ id?: string; nome: string; descricao?: string }>;
 }

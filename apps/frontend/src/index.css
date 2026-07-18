@@ -117,6 +117,11 @@
     @apply my-3 border-l-4 border-rpg-gold-dark bg-rpg-gold/10 py-2 pl-4 italic text-rpg-ink-dim;
   }
 
+  .rich-editor-content aside.story-teal-quote,
+  .rich-editor-content blockquote.story-teal-quote {
+    @apply my-3 border-l-4 border-rpg-mana bg-rpg-mana/15 py-2 pl-4 not-italic text-rpg-mana;
+  }
+
   .rich-editor-content strong {
     @apply font-bold text-rpg-ink-dark;
   }

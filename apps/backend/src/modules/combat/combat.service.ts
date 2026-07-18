@@ -81,6 +81,8 @@ export class CombatService {
         tipo: string;
         duracao_rodadas: number | null;
       }[];
+      atributos: unknown;
+      habilidades: unknown;
       player: { imagem_id: string | null } | null;
       character: { imagem_id: string | null } | null;
     },
@@ -106,6 +108,13 @@ export class CombatService {
       debuffs: participant.statusEffects
         .filter(effect => effect.tipo === 'DEBUFF')
         .map(effect => this.toEffectResponse(effect)),
+      atributos: (participant.atributos as Record<string, number> | null) ?? undefined,
+      habilidades:
+        (participant.habilidades as Array<{
+          id?: string;
+          nome: string;
+          descricao?: string;
+        }> | null) ?? undefined,
     };
   }
 

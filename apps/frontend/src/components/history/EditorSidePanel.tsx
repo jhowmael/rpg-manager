@@ -1,19 +1,26 @@
 import { GripVertical, Users } from 'lucide-react';
 import { CharacterPalette } from './CharacterPalette';
+import { MapPalette } from './MapPalette';
 import { AudioPalette } from './AudioPalette';
 import type { CharacterDragPayload } from '../../data/characterDrag';
+import type { MapDragPayload } from '../../data/mapDrag';
 import type { AudioDragPayload } from '../../data/soundLibrary';
 import type { Character } from '../../types/character';
+import type { CampaignMap } from '../../types/map';
 
 interface EditorSidePanelProps {
   characters: Character[];
+  maps: CampaignMap[];
   onInsertCharacter: (payload: CharacterDragPayload) => void;
+  onInsertMap: (payload: MapDragPayload) => void;
   onInsertAudio: (payload: AudioDragPayload) => void;
 }
 
 export function EditorSidePanel({
   characters,
+  maps,
   onInsertCharacter,
+  onInsertMap,
   onInsertAudio,
 }: EditorSidePanelProps) {
   return (
@@ -36,6 +43,7 @@ export function EditorSidePanel({
               onInsert={onInsertCharacter}
               embedded
             />
+            <MapPalette maps={maps} onInsert={onInsertMap} embedded />
             <AudioPalette onInsert={onInsertAudio} embedded />
           </div>
         </div>
@@ -43,7 +51,7 @@ export function EditorSidePanel({
         <footer className="shrink-0 border-t border-dashed border-rpg-border bg-rpg-parchment/40 px-3 py-2">
           <p className="flex items-center gap-1 font-sans text-[9px] leading-snug text-rpg-ink-faded">
             <GripVertical size={10} className="shrink-0 opacity-60" />
-            Sons: duplo clique pré-ouve · NPCs: duplo clique abre ficha
+            Sons: 2x clique pré-ouve · NPCs: 2x clique = ficha · Mapas: olho/miniatura = zoom
           </p>
         </footer>
       </div>

@@ -18,6 +18,7 @@ import {
   updateSideQuest,
 } from '../services/historyService';
 import type { Character } from '../types/character';
+import type { CampaignMap } from '../types/map';
 import type { MainStory, SideQuest, StoryType } from '../types/history';
 import { PixelButton } from '../components/ui/PixelButton';
 
@@ -37,9 +38,10 @@ interface HistoryPageProps {
   campaignId: string;
   campaignName: string;
   characters: Character[];
+  maps: CampaignMap[];
 }
 
-export function HistoryPage({ campaignId, campaignName, characters }: HistoryPageProps) {
+export function HistoryPage({ campaignId, campaignName, characters, maps }: HistoryPageProps) {
   const [view, setView] = useState<View>('list');
   const [editorState, setEditorState] = useState<EditorState | null>(null);
   const [viewerState, setViewerState] = useState<ViewerState | null>(null);
@@ -52,6 +54,7 @@ export function HistoryPage({ campaignId, campaignName, characters }: HistoryPag
   const [toast, setToast] = useState<string | null>(null);
 
   const campaignCharacters = characters.filter(c => c.campanha_id === campaignId);
+  const campaignMaps = maps.filter(m => m.campanha_id === campaignId);
   const overlayCharacter = characterOverlayId
     ? campaignCharacters.find(c => c.id === characterOverlayId)
     : null;
@@ -294,6 +297,7 @@ export function HistoryPage({ campaignId, campaignName, characters }: HistoryPag
       <StoryViewer
         story={freshStory}
         type={viewerState.type}
+        maps={campaignMaps}
         onBack={goToList}
         onEdit={() => openEdit(viewerState.type, freshStory)}
       />,
@@ -307,6 +311,7 @@ export function HistoryPage({ campaignId, campaignName, characters }: HistoryPag
         story={editorState.story}
         nextOrdem={nextOrdem}
         characters={campaignCharacters}
+        maps={campaignMaps}
         isSaving={isSaving}
         onSave={(data, options) => {
           if (editorState.type === 'main') {

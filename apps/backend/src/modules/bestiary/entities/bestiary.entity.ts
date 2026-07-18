@@ -12,4 +12,6 @@ export class BestiaryEntry {
   personalidade?: string[];
   familia_relacoes?: string;
   imagem_id?: string;
+  atributos?: Record<string, number> | null;
+  habilidades?: Array<{ id?: string; nome: string; descricao?: string }> | null;
 }

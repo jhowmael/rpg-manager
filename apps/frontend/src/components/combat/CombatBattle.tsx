@@ -44,6 +44,12 @@ export function CombatBattle({ combat, onUpdate, onBack, onEnd, onViewHistory }:
     }
   };
 
+  const handleRevive = (fighterId: string, nome: string) => {
+    if (window.confirm(`Reviver "${nome}"?`)) {
+      patchFighter(fighterId, { status: 'active' });
+    }
+  };
+
   const handleNextTurn = () => {
     const next = advanceTurn(combat);
     onUpdate(next);
@@ -158,7 +164,8 @@ export function CombatBattle({ combat, onUpdate, onBack, onEnd, onViewHistory }:
 
       <PixelCard title="Combatentes" icon="👥">
         <p className="mb-3 font-sans text-xs text-rpg-ink-faded">
-          Clique em um combatente para editar vida, CA, buffs e debuffs durante a rodada.
+          Clique em um combatente para editar vida, CA, atributos, habilidades, buffs e debuffs.
+          Personagens só morrem pelo botão Matar; use Reviver para trazê-los de volta.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2">
           {ordered.map((fighter, index) => (
@@ -173,6 +180,7 @@ export function CombatBattle({ combat, onUpdate, onBack, onEnd, onViewHistory }:
                 onUpdate={patch => patchFighter(fighter.id, patch)}
                 onKill={() => handleKill(fighter.id, fighter.nome)}
                 onFlee={() => handleFlee(fighter.id, fighter.nome)}
+                onRevive={() => handleRevive(fighter.id, fighter.nome)}
               />
             </li>
           ))}

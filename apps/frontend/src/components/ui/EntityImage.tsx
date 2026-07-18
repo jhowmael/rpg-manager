@@ -25,6 +25,7 @@ export function EntityImage({
 }: EntityImageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const url = getEntityImageUrl(imagemId);
+  const canEnlarge = Boolean(url && (enableLightbox || onImageClick));
 
   const handleClick = (event: React.MouseEvent) => {
     if (onImageClick) {
@@ -44,25 +45,29 @@ export function EntityImage({
         className={[
           'flex items-center justify-center',
           containerClassName,
-          url && enableLightbox ? 'cursor-zoom-in' : '',
+          canEnlarge ? 'cursor-zoom-in' : '',
         ]
           .filter(Boolean)
           .join(' ')}
         onClick={url ? handleClick : undefined}
         onKeyDown={
-          url && enableLightbox
+          canEnlarge
             ? event => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   event.stopPropagation();
+                  if (onImageClick) {
+                    onImageClick(event as unknown as React.MouseEvent);
+                    return;
+                  }
                   setLightboxOpen(true);
                 }
               }
             : undefined
         }
-        role={url && enableLightbox ? 'button' : undefined}
-        tabIndex={url && enableLightbox ? 0 : undefined}
-        title={url && enableLightbox ? 'Clique para ampliar' : undefined}
+        role={canEnlarge ? 'button' : undefined}
+        tabIndex={canEnlarge ? 0 : undefined}
+        title={canEnlarge ? 'Clique para ampliar' : undefined}
       >
         {url ? (
           <img

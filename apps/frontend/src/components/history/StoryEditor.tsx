@@ -5,6 +5,7 @@ import { PixelInput } from '../ui/PixelInput';
 import { RichTextEditor, type RichTextEditorHandle } from './RichTextEditor';
 import type { MainStory, SideQuest, SideQuestStatus, StoryType } from '../../types/history';
 import type { Character } from '../../types/character';
+import type { CampaignMap } from '../../types/map';
 
 export interface StorySaveOptions {
   continueEditing?: boolean;
@@ -15,6 +16,7 @@ interface StoryEditorProps {
   story?: MainStory | SideQuest;
   nextOrdem?: number;
   characters: Character[];
+  maps: CampaignMap[];
   isSaving?: boolean;
   onSave: (
     data: Omit<MainStory, 'id' | 'campanha_id'> | Omit<SideQuest, 'id' | 'campanha_id'>,
@@ -34,6 +36,7 @@ export function StoryEditor({
   story,
   nextOrdem = 1,
   characters,
+  maps,
   isSaving = false,
   onSave,
   onCancel,
@@ -169,6 +172,7 @@ export function StoryEditor({
             content={conteudo}
             onChange={setConteudo}
             characters={characters}
+            maps={maps}
             placeholder="Escreva a história com formatação: negrito, listas, títulos..."
           />
         </div>
