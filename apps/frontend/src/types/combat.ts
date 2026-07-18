@@ -12,6 +12,10 @@ export interface StatusEffect {
   id: string;
   nome: string;
   tipo: EffectType;
+  /** Descrição da condição (ex.: Open5e) */
+  descricao?: string;
+  /** Origem: open5e | manual */
+  origem?: 'open5e' | 'manual';
   /** Rodadas restantes; omitido = até remover manualmente */
   duracaoRodadas?: number;
 }

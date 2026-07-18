@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "characters" ADD COLUMN IF NOT EXISTS "vida_maxima" INTEGER;
+ALTER TABLE "characters" ADD COLUMN IF NOT EXISTS "ca" INTEGER;

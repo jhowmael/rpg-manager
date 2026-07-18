@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { ImagePlus } from 'lucide-react';
+import { ImagePlus, Library } from 'lucide-react';
 import { PixelButton } from './PixelButton';
 import { ImageLightbox } from './ImageLightbox';
+import { Open5eImagePicker } from './Open5eImagePicker';
 import { getEntityImageUrl } from '../../utils/entityImage';
 import { validateImageFile } from '../../utils/imageUpload';
 
@@ -10,6 +11,7 @@ interface ImageUploadFieldProps {
   imagemId?: string;
   fallbackEmoji?: string;
   disabled?: boolean;
+  enableOpen5eBrowse?: boolean;
   onFileSelect: (file: File | null) => void;
   onClear?: () => void;
 }
@@ -19,6 +21,7 @@ export function ImageUploadField({
   imagemId,
   fallbackEmoji = '🖼️',
   disabled = false,
+  enableOpen5eBrowse = false,
   onFileSelect,
   onClear,
 }: ImageUploadFieldProps) {
@@ -26,6 +29,7 @@ export function ImageUploadField({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [open5eOpen, setOpen5eOpen] = useState(false);
 
   const displayUrl = previewUrl ?? getEntityImageUrl(imagemId);
 
@@ -37,12 +41,7 @@ export function ImageUploadField({
     };
   }, [previewUrl]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-
-    if (!file) return;
-
+  const applyFile = (file: File) => {
     const validationError = validateImageFile(file);
     if (validationError) {
       setError(validationError);
@@ -55,6 +54,14 @@ export function ImageUploadField({
       return URL.createObjectURL(file);
     });
     onFileSelect(file);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+    applyFile(file);
   };
 
   const handleClear = () => {
@@ -91,7 +98,8 @@ export function ImageUploadField({
       <div className="flex flex-1 flex-col gap-2 text-center sm:text-left">
         <p className="pixel-label">{label}</p>
         <p className="font-sans text-xs text-rpg-ink-faded">
-          JPG, PNG, GIF ou WebP — máximo 2 MB. A imagem é salva no servidor com ID único.
+          JPG, PNG, GIF ou WebP — máximo 2 MB. Carregue do PC
+          {enableOpen5eBrowse ? ' ou busque no SRD / Scryfall' : ''}.
         </p>
         <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
           <PixelButton
@@ -105,6 +113,19 @@ export function ImageUploadField({
               Carregar imagem
             </span>
           </PixelButton>
+          {enableOpen5eBrowse && (
+            <PixelButton
+              type="button"
+              variant="ghost"
+              disabled={disabled}
+              onClick={() => setOpen5eOpen(true)}
+            >
+              <span className="flex items-center gap-2">
+                <Library size={14} />
+                Buscar imagem SRD
+              </span>
+            </PixelButton>
+          )}
           {(previewUrl || imagemId) && (
             <PixelButton type="button" variant="ghost" disabled={disabled} onClick={handleClear}>
               Remover
@@ -126,6 +147,14 @@ export function ImageUploadField({
           src={displayUrl}
           alt="Pré-visualização"
           onClose={() => setLightboxOpen(false)}
+        />
+      )}
+
+      {enableOpen5eBrowse && (
+        <Open5eImagePicker
+          open={open5eOpen}
+          onClose={() => setOpen5eOpen(false)}
+          onSelectFile={applyFile}
         />
       )}
     </div>

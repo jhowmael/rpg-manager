@@ -5,7 +5,9 @@ import { PixelCard } from '../ui/PixelCard';
 import { TurnOrderStrip } from './CombatInitiative';
 import { FighterBattleCard } from './FighterBattleCard';
 import { useTurnTimer } from '../../hooks/useTurnTimer';
+import { updateBestiaryEntry } from '../../services/bestiaryService';
 import type { Combat, CombatFighter } from '../../types/combat';
+import { DEFAULT_ATTRIBUTES } from '../../types/combat';
 import { advanceTurn, getOrderedFighters, updateFighter } from '../../utils/combat';
 
 interface CombatBattleProps {
@@ -48,6 +50,20 @@ export function CombatBattle({ combat, onUpdate, onBack, onEnd, onViewHistory }:
     if (window.confirm(`Reviver "${nome}"?`)) {
       patchFighter(fighterId, { status: 'active' });
     }
+  };
+
+  const handleSaveToSheet = async (fighterId: string) => {
+    const fighter = combat.fighters.find(f => f.id === fighterId);
+    if (!fighter?.sourceId) {
+      throw new Error('Combatente sem ficha vinculada.');
+    }
+
+    await updateBestiaryEntry(fighter.sourceId, {
+      atributos: { ...DEFAULT_ATTRIBUTES, ...fighter.atributos },
+      habilidades: fighter.habilidades ?? [],
+      vida_maxima: fighter.vidaMaxima,
+      ca: fighter.ca,
+    });
   };
 
   const handleNextTurn = () => {
@@ -164,8 +180,8 @@ export function CombatBattle({ combat, onUpdate, onBack, onEnd, onViewHistory }:
 
       <PixelCard title="Combatentes" icon="👥">
         <p className="mb-3 font-sans text-xs text-rpg-ink-faded">
-          Clique em um combatente para editar vida, CA, atributos, habilidades, buffs e debuffs.
-          Personagens só morrem pelo botão Matar; use Reviver para trazê-los de volta.
+          Clique no card para expandir ou recolher. Em NPCs/Mobs, Salvar na ficha
+          grava atributos e habilidades no grimório.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2">
           {ordered.map((fighter, index) => (
@@ -181,6 +197,12 @@ export function CombatBattle({ combat, onUpdate, onBack, onEnd, onViewHistory }:
                 onKill={() => handleKill(fighter.id, fighter.nome)}
                 onFlee={() => handleFlee(fighter.id, fighter.nome)}
                 onRevive={() => handleRevive(fighter.id, fighter.nome)}
+                onSaveToSheet={
+                  fighter.sourceId &&
+                  (fighter.source === 'NPC' || fighter.source === 'MOB' || fighter.source === 'CUSTOM')
+                    ? () => handleSaveToSheet(fighter.id)
+                    : undefined
+                }
               />
             </li>
           ))}

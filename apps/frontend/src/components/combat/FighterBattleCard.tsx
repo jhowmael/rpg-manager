@@ -1,5 +1,15 @@
-import { useState } from 'react';
-import { Heart, Minus, Plus, Skull, X, Wind } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Heart,
+  Minus,
+  Plus,
+  Save,
+  Skull,
+  X,
+  Wind,
+} from 'lucide-react';
 import { PixelButton } from '../ui/PixelButton';
 import type {
   CharacterAbility,
@@ -16,6 +26,10 @@ import {
   getFighterStatus,
   isFighterInBattle,
 } from '../../utils/combat';
+import {
+  fetchOpen5eConditions,
+  type Open5eCondition,
+} from '../../services/open5eService';
 
 interface FighterBattleCardProps {
   fighter: CombatFighter;
@@ -26,6 +40,7 @@ interface FighterBattleCardProps {
   onKill: () => void;
   onFlee: () => void;
   onRevive: () => void;
+  onSaveToSheet?: () => Promise<void> | void;
 }
 
 const ATTR_LABELS: { key: keyof CharacterAttributes; label: string }[] = [
@@ -37,6 +52,12 @@ const ATTR_LABELS: { key: keyof CharacterAttributes; label: string }[] = [
   { key: 'carisma', label: 'CAR' },
 ];
 
+function canSaveToSheet(fighter: CombatFighter): boolean {
+  return Boolean(
+    fighter.sourceId && (fighter.source === 'NPC' || fighter.source === 'MOB' || fighter.source === 'CUSTOM'),
+  );
+}
+
 export function FighterBattleCard({
   fighter,
   isActive,
@@ -46,14 +67,32 @@ export function FighterBattleCard({
   onKill,
   onFlee,
   onRevive,
+  onSaveToSheet,
 }: FighterBattleCardProps) {
   const status = getFighterStatus(fighter);
   const inBattle = isFighterInBattle(fighter);
   const atributos = { ...DEFAULT_ATTRIBUTES, ...fighter.atributos };
   const habilidades = fighter.habilidades ?? [];
+  const showSave = canSaveToSheet(fighter) && Boolean(onSaveToSheet);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const hpPercent = fighter.vidaMaxima > 0
     ? Math.min(100, (fighter.vidaAtual / fighter.vidaMaxima) * 100)
     : 0;
+
+  const handleSave = async () => {
+    if (!onSaveToSheet || saving) return;
+    setSaving(true);
+    setSaveMessage(null);
+    try {
+      await onSaveToSheet();
+      setSaveMessage('Ficha atualizada!');
+    } catch {
+      setSaveMessage('Falha ao salvar na ficha.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <article
@@ -110,6 +149,9 @@ export function FighterBattleCard({
             {fighter.iniciativa !== null && ` · INI ${fighter.iniciativa}`}
           </p>
         </div>
+        <span className="shrink-0 text-rpg-ink-faded" aria-hidden>
+          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </span>
       </button>
 
       {expanded && (
@@ -145,7 +187,22 @@ export function FighterBattleCard({
                 Reviver
               </button>
             )}
+            {showSave && (
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={saving}
+                className="flex items-center gap-1.5 border-2 border-rpg-mana/50 bg-rpg-mana/10 px-3 py-1.5 font-sans text-xs font-semibold text-rpg-mana transition-colors hover:border-rpg-mana hover:bg-rpg-mana/20 disabled:opacity-50"
+              >
+                <Save size={14} />
+                {saving ? 'Salvando…' : 'Salvar na ficha'}
+              </button>
+            )}
           </div>
+
+          {saveMessage && (
+            <p className="mb-3 font-sans text-xs text-rpg-ink-dim">{saveMessage}</p>
+          )}
 
           <StatEditor
             label="Vida"
@@ -383,15 +440,60 @@ function StatusEffectEditor({
   onChange: (effects: StatusEffect[]) => void;
 }) {
   const [nome, setNome] = useState('');
+  const [conditions, setConditions] = useState<Open5eCondition[]>([]);
+  const [conditionsError, setConditionsError] = useState<string | null>(null);
+  const [loadingConditions, setLoadingConditions] = useState(true);
   const isBuff = tipo === 'BUFF';
 
-  const add = () => {
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingConditions(true);
+    void fetchOpen5eConditions()
+      .then(list => {
+        if (!cancelled) setConditions(list);
+      })
+      .catch(() => {
+        if (!cancelled) setConditionsError('Não foi possível carregar condições da Open5e.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingConditions(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const addManual = () => {
     if (!nome.trim()) return;
     onChange([
       ...effects,
-      { id: crypto.randomUUID(), nome: nome.trim(), tipo },
+      {
+        id: crypto.randomUUID(),
+        nome: nome.trim(),
+        tipo,
+        origem: 'manual',
+      },
     ]);
     setNome('');
+  };
+
+  const addCondition = (condition: Open5eCondition) => {
+    const already = effects.some(
+      effect => effect.nome.toLowerCase() === condition.namePt.toLowerCase()
+        || effect.nome.toLowerCase() === condition.name.toLowerCase(),
+    );
+    if (already) return;
+
+    onChange([
+      ...effects,
+      {
+        id: crypto.randomUUID(),
+        nome: condition.namePt,
+        tipo,
+        descricao: condition.desc || undefined,
+        origem: 'open5e',
+      },
+    ]);
   };
 
   const remove = (id: string) => onChange(effects.filter(e => e.id !== id));
@@ -403,14 +505,15 @@ function StatusEffectEditor({
         {effects.map(effect => (
           <span
             key={effect.id}
+            title={effect.descricao || undefined}
             className={[
-              'inline-flex items-center gap-1 border px-2 py-0.5 font-sans text-[10px] font-semibold',
+              'inline-flex max-w-full items-center gap-1 border px-2 py-0.5 font-sans text-[10px] font-semibold',
               isBuff
                 ? 'border-rpg-forest/50 bg-rpg-forest/10 text-rpg-forest'
                 : 'border-rpg-hp/50 bg-rpg-hp/10 text-rpg-hp',
             ].join(' ')}
           >
-            {effect.nome}
+            <span className="truncate">{effect.nome}</span>
             <button type="button" onClick={() => remove(effect.id)} className="opacity-70 hover:opacity-100">
               <X size={10} />
             </button>
@@ -420,16 +523,59 @@ function StatusEffectEditor({
           <span className="font-sans text-[10px] text-rpg-ink-faded">Nenhum</span>
         )}
       </div>
+
+      <div className="mb-2">
+        <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-wide text-rpg-ink-faded">
+          Condições SRD
+        </p>
+        {loadingConditions && (
+          <p className="font-sans text-[10px] text-rpg-ink-faded">Carregando…</p>
+        )}
+        {conditionsError && (
+          <p className="font-sans text-[10px] text-rpg-hp">{conditionsError}</p>
+        )}
+        {!loadingConditions && conditions.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {conditions.map(condition => {
+              const active = effects.some(
+                effect =>
+                  effect.nome.toLowerCase() === condition.namePt.toLowerCase()
+                  || effect.nome.toLowerCase() === condition.name.toLowerCase(),
+              );
+              return (
+                <button
+                  key={condition.slug}
+                  type="button"
+                  title={condition.desc || condition.name}
+                  disabled={active}
+                  onClick={() => addCondition(condition)}
+                  className={[
+                    'border px-2 py-0.5 font-sans text-[10px] font-semibold transition-colors',
+                    active
+                      ? 'cursor-default border-rpg-border/50 bg-rpg-panel text-rpg-ink-faded opacity-50'
+                      : isBuff
+                        ? 'border-rpg-forest/40 bg-rpg-parchment text-rpg-forest hover:border-rpg-forest hover:bg-rpg-forest/10'
+                        : 'border-rpg-hp/40 bg-rpg-parchment text-rpg-hp hover:border-rpg-hp hover:bg-rpg-hp/10',
+                  ].join(' ')}
+                >
+                  {condition.namePt}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-2">
         <input
           type="text"
           value={nome}
           onChange={e => setNome(e.target.value)}
-          placeholder={`Novo ${title.toLowerCase().slice(0, -1)}…`}
+          placeholder="Ou digite um efeito personalizado…"
           className="min-w-0 flex-1 border-2 border-rpg-border bg-rpg-parchment px-2 py-1 font-sans text-xs outline-none focus:border-rpg-gold"
-          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
+          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addManual())}
         />
-        <PixelButton type="button" variant="ghost" onClick={add}>
+        <PixelButton type="button" variant="ghost" onClick={addManual}>
           <Plus size={12} />
         </PixelButton>
       </div>

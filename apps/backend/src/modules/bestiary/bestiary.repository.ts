@@ -36,6 +36,8 @@ export class BestiaryRepository {
 				o_que_sabe: data.o_que_sabe,
 				personalidade: data.personalidade ?? [],
 				familia_relacoes: data.familia_relacoes,
+				vida_maxima: data.vida_maxima,
+				ca: data.ca,
 				atributos: data.atributos
 					? (data.atributos as unknown as Prisma.InputJsonValue)
 					: Prisma.JsonNull,
@@ -67,6 +69,8 @@ export class BestiaryRepository {
 		if (data.familia_relacoes !== undefined) {
 			updateData.familia_relacoes = data.familia_relacoes;
 		}
+		if (data.vida_maxima !== undefined) updateData.vida_maxima = data.vida_maxima;
+		if (data.ca !== undefined) updateData.ca = data.ca;
 		if (data.atributos !== undefined) {
 			updateData.atributos = data.atributos as unknown as Prisma.InputJsonValue;
 		}
@@ -101,6 +105,8 @@ export class BestiaryRepository {
 		personalidade: string[];
 		familia_relacoes: string | null;
 		imagem_id: string | null;
+		vida_maxima: number | null;
+		ca: number | null;
 		atributos: Prisma.JsonValue;
 		habilidades: Prisma.JsonValue;
 	}): BestiaryEntry {
@@ -118,6 +124,8 @@ export class BestiaryRepository {
 			personalidade: row.personalidade,
 			familia_relacoes: row.familia_relacoes ?? undefined,
 			imagem_id: row.imagem_id ?? undefined,
+			vida_maxima: row.vida_maxima ?? undefined,
+			ca: row.ca ?? undefined,
 			atributos: (row.atributos as Record<string, number> | null) ?? undefined,
 			habilidades:
 				(row.habilidades as Array<{

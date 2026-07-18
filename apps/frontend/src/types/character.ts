@@ -38,6 +38,8 @@ export interface Character {
   o_que_sabe?: string;
   personalidade?: string[];
   familia_relacoes?: string;
+  vida_maxima?: number;
+  ca?: number;
   atributos?: CharacterAttributes;
   habilidades?: CharacterAbility[];
 }

@@ -21,13 +21,96 @@ export const FIGHTER_STATUS_STYLES: Record<FighterStatus, string> = {
 };
 
 export function sortFightersByInitiative(fighters: CombatFighter[]): CombatFighter[] {
+  return resolveInitiativeOrder(fighters).map((fighter, index) => ({
+    ...fighter,
+    ordemVez: index + 1,
+  }));
+}
+
+/** Entrada ordenável: keys[0] = iniciativa base; keys seguintes = rodadas de desempate. */
+export interface InitiativeOrderEntry {
+  fighterId: string;
+  keys: number[];
+}
+
+function compareInitiativeKeys(a: number[], b: number[]): number {
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const diff = (b[i] ?? 0) - (a[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+export function buildInitiativeOrderEntries(fighters: CombatFighter[]): InitiativeOrderEntry[] {
   return [...fighters]
-    .sort((a, b) => {
-      const diff = (b.iniciativa ?? 0) - (a.iniciativa ?? 0);
-      if (diff !== 0) return diff;
-      return a.nome.localeCompare(b.nome, 'pt-BR');
-    })
-    .map((fighter, index) => ({ ...fighter, ordemVez: index + 1 }));
+    .map(f => ({
+      fighterId: f.id,
+      keys: [f.iniciativa ?? 0],
+    }))
+    .sort((a, b) => compareInitiativeKeys(a.keys, b.keys));
+}
+
+/** Grupos consecutivos ainda empatados (mesmo conjunto de keys). */
+export function findInitiativeTieGroups(entries: InitiativeOrderEntry[]): InitiativeOrderEntry[][] {
+  if (entries.length === 0) return [];
+
+  const groups: InitiativeOrderEntry[][] = [];
+  let current: InitiativeOrderEntry[] = [entries[0]];
+
+  for (let i = 1; i < entries.length; i++) {
+    const entry = entries[i];
+    if (compareInitiativeKeys(current[0].keys, entry.keys) === 0) {
+      current.push(entry);
+    } else {
+      groups.push(current);
+      current = [entry];
+    }
+  }
+  groups.push(current);
+  return groups;
+}
+
+export function getTiedFighterIds(entries: InitiativeOrderEntry[]): string[] {
+  return findInitiativeTieGroups(entries)
+    .filter(group => group.length > 1)
+    .flatMap(group => group.map(e => e.fighterId));
+}
+
+/**
+ * Aplica uma rodada de desempate só dentro dos grupos empatados.
+ * Quem não empatou mantém a posição relativa (não “desce” na ordem).
+ */
+export function applyInitiativeTiebreak(
+  entries: InitiativeOrderEntry[],
+  rolls: Record<string, number>,
+): InitiativeOrderEntry[] {
+  return findInitiativeTieGroups(entries).flatMap(group => {
+    if (group.length === 1) return group;
+
+    return [...group]
+      .map(entry => ({
+        ...entry,
+        keys: [...entry.keys, rolls[entry.fighterId] ?? 0],
+      }))
+      .sort((a, b) => compareInitiativeKeys(a.keys, b.keys));
+  });
+}
+
+export function resolveInitiativeOrder(
+  fighters: CombatFighter[],
+  entries?: InitiativeOrderEntry[],
+): CombatFighter[] {
+  const byId = new Map(fighters.map(f => [f.id, f]));
+  const orderedEntries = entries ?? buildInitiativeOrderEntries(fighters);
+
+  return orderedEntries
+    .map(entry => byId.get(entry.fighterId))
+    .filter((f): f is CombatFighter => Boolean(f));
+}
+
+export function assignOrdemVez(fighters: CombatFighter[]): CombatFighter[] {
+  return fighters.map((fighter, index) => ({ ...fighter, ordemVez: index + 1 }));
 }
 
 export function getOrderedFighters(fighters: CombatFighter[]): CombatFighter[] {

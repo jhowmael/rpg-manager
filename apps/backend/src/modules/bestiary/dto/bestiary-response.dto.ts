@@ -46,6 +46,12 @@ export class BestiaryResponseDto {
   familia_relacoes?: string;
 
   @ApiPropertyOptional()
+  vida_maxima?: number;
+
+  @ApiPropertyOptional()
+  ca?: number;
+
+  @ApiPropertyOptional()
   atributos?: Record<string, number>;
 
   @ApiPropertyOptional({ type: [CharacterAbilityDto] })

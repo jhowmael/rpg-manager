@@ -133,6 +133,18 @@ export class BestiaryRequestDto {
   @IsString()
   familia_relacoes?: string;
 
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  vida_maxima?: number;
+
+  @ApiPropertyOptional({ example: 12 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  ca?: number;
+
   @ApiPropertyOptional({ type: CharacterAttributesDto })
   @IsOptional()
   @ValidateNested()

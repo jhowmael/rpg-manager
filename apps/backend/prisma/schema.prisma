@@ -115,6 +115,8 @@ model Character {
   familia_relacoes   String?
   imagem_id          String?
   image              Image?                @relation(fields: [imagem_id], references: [id], onDelete: SetNull)
+  vida_maxima        Int?
+  ca                 Int?
   atributos          Json?
   habilidades        Json?
   sideQuests         SideQuestCharacter[]

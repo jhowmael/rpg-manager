@@ -16,5 +16,13 @@ export function getCharacterMetaItems(character: Character): CharacterMetaItem[]
   return [
     { label: 'Raça', value: character.raca },
     { label: 'Classe', value: character.classe },
+    {
+      label: 'Vida',
+      value: character.vida_maxima != null ? String(character.vida_maxima) : undefined,
+    },
+    {
+      label: 'CA',
+      value: character.ca != null ? String(character.ca) : undefined,
+    },
   ].filter(item => item.value);
 }

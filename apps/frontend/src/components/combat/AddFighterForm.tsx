@@ -43,6 +43,18 @@ export function AddFighterForm({ heroes, characters, onAdd }: AddFighterFormProp
 		setCa(10);
 	};
 
+	const applyCharacterStats = (characterId: string, list: Character[]) => {
+		const character = list.find(c => c.id === characterId);
+		if (!character) return;
+		if (character.vida_maxima != null) {
+			setVidaMaxima(character.vida_maxima);
+			setVidaAtual(character.vida_maxima);
+		}
+		if (character.ca != null) {
+			setCa(character.ca);
+		}
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -64,14 +76,16 @@ export function AddFighterForm({ heroes, characters, onAdd }: AddFighterFormProp
 			const list = mode === 'npc' ? npcs : mobs;
 			const character = list.find(c => c.id === sourceId);
 			if (!character) return;
+			const maxHp = character.vida_maxima ?? vidaMaxima;
+			const armor = character.ca ?? ca;
 			data = {
 				nome: character.nome,
 				source: mode === 'npc' ? 'NPC' : 'MOB',
 				sourceId: character.id,
 				imagem: getEntityImageUrl(character.imagem_id),
-				vidaMaxima,
-				vidaAtual,
-				ca,
+				vidaMaxima: maxHp,
+				vidaAtual: maxHp,
+				ca: armor,
 				atributos: character.atributos,
 				habilidades: character.habilidades,
 			};
@@ -121,7 +135,16 @@ export function AddFighterForm({ heroes, characters, onAdd }: AddFighterFormProp
 			)}
 
 			{mode === 'npc' && (
-				<select value={sourceId} onChange={e => setSourceId(e.target.value)} className={selectClass} required>
+				<select
+					value={sourceId}
+					onChange={e => {
+						const id = e.target.value;
+						setSourceId(id);
+						applyCharacterStats(id, npcs);
+					}}
+					className={selectClass}
+					required
+				>
 					<option value="">Selecione um NPC…</option>
 					{npcs.map(c => (
 						<option key={c.id} value={c.id}>{c.nome}</option>
@@ -130,7 +153,16 @@ export function AddFighterForm({ heroes, characters, onAdd }: AddFighterFormProp
 			)}
 
 			{mode === 'mob' && (
-				<select value={sourceId} onChange={e => setSourceId(e.target.value)} className={selectClass} required>
+				<select
+					value={sourceId}
+					onChange={e => {
+						const id = e.target.value;
+						setSourceId(id);
+						applyCharacterStats(id, mobs);
+					}}
+					className={selectClass}
+					required
+				>
 					<option value="">Selecione um mob…</option>
 					{mobs.map(c => (
 						<option key={c.id} value={c.id}>{c.nome}</option>

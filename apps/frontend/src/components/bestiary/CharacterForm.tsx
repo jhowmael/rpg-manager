@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, BookOpen, Save } from 'lucide-react';
 import { PixelButton } from '../ui/PixelButton';
 import { PixelInput } from '../ui/PixelInput';
 import { PixelTextarea } from '../ui/PixelTextarea';
 import { ImageUploadField } from '../ui/ImageUploadField';
 import { PersonalityTagField } from '../ui/PersonalityTagField';
+import { Open5eMonsterImportPicker } from '../ui/Open5eMonsterImportPicker';
 import {
   CHARACTER_CLASSES,
   CHARACTER_RACES,
@@ -18,6 +19,11 @@ import {
   type CharacterType,
 } from '../../types/character';
 import { normalizePersonality } from '../../utils/characterProfile';
+import {
+  fetchRemoteImageAsFile,
+  type Open5eSheetImport,
+} from '../../services/open5eService';
+import { validateImageFile } from '../../utils/imageUpload';
 
 interface CharacterFormProps {
   character?: Character;
@@ -42,6 +48,21 @@ const ATTRIBUTE_FIELDS: { key: keyof CharacterAttributes; label: string }[] = [
   { key: 'carisma', label: 'CAR' },
 ];
 
+function splitListedOption(value: string | undefined, options: readonly string[]) {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed) return { select: '', custom: '' };
+  if ((options as readonly string[]).includes(trimmed)) {
+    return { select: trimmed, custom: '' };
+  }
+  return { select: 'Outro', custom: trimmed };
+}
+
+function resolveListedOption(select: string, custom: string): string | undefined {
+  if (!select) return undefined;
+  if (select === 'Outro') return custom.trim() || 'Outro';
+  return select;
+}
+
 export function CharacterForm({
   character,
   fixedTipo,
@@ -54,8 +75,14 @@ export function CharacterForm({
 
   const [nome, setNome] = useState(character?.nome ?? '');
   const [titulo, setTitulo] = useState(character?.titulo ?? '');
-  const [raca, setRaca] = useState(character?.raca ?? '');
-  const [classe, setClasse] = useState(character?.classe ?? '');
+  const initialRaca = splitListedOption(character?.raca, CHARACTER_RACES);
+  const initialClasse = splitListedOption(character?.classe, CHARACTER_CLASSES);
+  const [raca, setRaca] = useState(initialRaca.select);
+  const [racaCustom, setRacaCustom] = useState(initialRaca.custom);
+  const [classe, setClasse] = useState(initialClasse.select);
+  const [classeCustom, setClasseCustom] = useState(initialClasse.custom);
+  const [vidaMaxima, setVidaMaxima] = useState(character?.vida_maxima ?? 20);
+  const [ca, setCa] = useState(character?.ca ?? 10);
   const [atributos, setAtributos] = useState<CharacterAttributes>(
     character?.atributos ?? DEFAULT_ATTRIBUTES,
   );
@@ -73,6 +100,7 @@ export function CharacterForm({
   const [familiaRelacoes, setFamiliaRelacoes] = useState(character?.familia_relacoes ?? '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [keepExistingImage, setKeepExistingImage] = useState(Boolean(character?.imagem_id));
+  const [open5eOpen, setOpen5eOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const updateAtributo = (key: keyof CharacterAttributes, value: string) => {
@@ -103,6 +131,36 @@ export function CharacterForm({
     setHabilidades(prev => prev.filter(h => h.id !== id));
   };
 
+  const applyOpen5eSheet = async (sheet: Open5eSheetImport) => {
+    setNome(sheet.nome);
+    setTitulo(sheet.titulo ?? '');
+    const race = splitListedOption(sheet.raca ?? 'Outro', CHARACTER_RACES);
+    const klass = splitListedOption(sheet.classe ?? 'Outro', CHARACTER_CLASSES);
+    setRaca(race.select || 'Outro');
+    setRacaCustom(race.custom);
+    setClasse(klass.select || 'Outro');
+    setClasseCustom(klass.custom);
+    setVidaMaxima(sheet.vida_maxima);
+    setCa(sheet.ca);
+    setAtributos(sheet.atributos);
+    setHabilidades(sheet.habilidades);
+    setHistoria(sheet.historia ?? '');
+    setCaracteristicas(sheet.caracteristicas ?? '');
+    setError(null);
+
+    if (!sheet.imageUrl) return;
+
+    try {
+      const file = await fetchRemoteImageAsFile(sheet.imageUrl, sheet.nome);
+      const validationError = validateImageFile(file);
+      if (validationError) return;
+      setImageFile(file);
+      setKeepExistingImage(false);
+    } catch {
+      // Import da ficha segue mesmo se a imagem falhar.
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -115,8 +173,8 @@ export function CharacterForm({
       {
         nome: nome.trim(),
         titulo: titulo.trim() || undefined,
-        raca: raca || undefined,
-        classe: classe || undefined,
+        raca: resolveListedOption(raca, racaCustom),
+        classe: resolveListedOption(classe, classeCustom),
         tipo,
         imagem_id: keepExistingImage ? character?.imagem_id : undefined,
         historia: historia.trim() || undefined,
@@ -124,6 +182,8 @@ export function CharacterForm({
         o_que_sabe: oQueSabe.trim() || undefined,
         personalidade,
         familia_relacoes: familiaRelacoes.trim() || undefined,
+        vida_maxima: Math.max(1, vidaMaxima),
+        ca: Math.max(0, ca),
         atributos,
         habilidades,
       },
@@ -152,10 +212,28 @@ export function CharacterForm({
       </header>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-2 border-dashed border-rpg-mana/40 bg-rpg-mana/5 px-4 py-3">
+          <p className="font-sans text-xs text-rpg-ink-dim">
+            Importe um monstro do SRD (Open5e) para preencher a ficha automaticamente.
+          </p>
+          <PixelButton
+            type="button"
+            variant="ghost"
+            disabled={isSaving}
+            onClick={() => setOpen5eOpen(true)}
+          >
+            <span className="flex items-center gap-2">
+              <BookOpen size={14} />
+              Importar da Open5e
+            </span>
+          </PixelButton>
+        </div>
+
         <ImageUploadField
           imagemId={keepExistingImage ? character?.imagem_id : undefined}
           fallbackEmoji={tipo === 'MOB' ? '💀' : '👤'}
           disabled={isSaving}
+          enableOpen5eBrowse
           onFileSelect={file => {
             setImageFile(file);
             if (file) setKeepExistingImage(false);
@@ -190,7 +268,10 @@ export function CharacterForm({
             <select
               id="raca"
               value={raca}
-              onChange={e => setRaca(e.target.value)}
+              onChange={e => {
+                setRaca(e.target.value);
+                if (e.target.value !== 'Outro') setRacaCustom('');
+              }}
               disabled={isSaving}
               className={selectClass}
             >
@@ -201,6 +282,16 @@ export function CharacterForm({
                 </option>
               ))}
             </select>
+            {raca === 'Outro' && (
+              <input
+                type="text"
+                value={racaCustom}
+                onChange={e => setRacaCustom(e.target.value)}
+                disabled={isSaving}
+                placeholder="Descreva a raça…"
+                className="pixel-corners w-full border-2 border-rpg-border bg-rpg-parchment px-3 py-2 font-sans text-base text-rpg-ink outline-none focus:border-rpg-gold disabled:opacity-60"
+              />
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -210,7 +301,10 @@ export function CharacterForm({
             <select
               id="classe"
               value={classe}
-              onChange={e => setClasse(e.target.value)}
+              onChange={e => {
+                setClasse(e.target.value);
+                if (e.target.value !== 'Outro') setClasseCustom('');
+              }}
               disabled={isSaving}
               className={selectClass}
             >
@@ -221,6 +315,16 @@ export function CharacterForm({
                 </option>
               ))}
             </select>
+            {classe === 'Outro' && (
+              <input
+                type="text"
+                value={classeCustom}
+                onChange={e => setClasseCustom(e.target.value)}
+                disabled={isSaving}
+                placeholder="Descreva a classe…"
+                className="pixel-corners w-full border-2 border-rpg-border bg-rpg-parchment px-3 py-2 font-sans text-base text-rpg-ink outline-none focus:border-rpg-gold disabled:opacity-60"
+              />
+            )}
           </div>
         </div>
 
@@ -239,6 +343,40 @@ export function CharacterForm({
             <span className="font-normal text-rpg-ink-faded">(fixo)</span>
           </div>
         </div>
+
+        <section className="flex flex-col gap-3 border-2 border-rpg-border bg-rpg-parchment p-4">
+          <h2 className="pixel-label">Combate</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="vida-maxima" className="pixel-label">
+                Vida máx.
+              </label>
+              <input
+                id="vida-maxima"
+                type="number"
+                min={1}
+                value={vidaMaxima}
+                onChange={e => setVidaMaxima(Math.max(1, Number(e.target.value) || 1))}
+                disabled={isSaving}
+                className={attrInputClass}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="ca" className="pixel-label">
+                CA
+              </label>
+              <input
+                id="ca"
+                type="number"
+                min={0}
+                value={ca}
+                onChange={e => setCa(Math.max(0, Number(e.target.value) || 0))}
+                disabled={isSaving}
+                className={attrInputClass}
+              />
+            </div>
+          </div>
+        </section>
 
         <section className="flex flex-col gap-3 border-2 border-rpg-border bg-rpg-parchment p-4">
           <h2 className="pixel-label">Atributos</h2>
@@ -388,6 +526,12 @@ export function CharacterForm({
           </PixelButton>
         </div>
       </form>
+
+      <Open5eMonsterImportPicker
+        open={open5eOpen}
+        onClose={() => setOpen5eOpen(false)}
+        onImport={sheet => void applyOpen5eSheet(sheet)}
+      />
     </div>
   );
 }
